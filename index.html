@@ -1,0 +1,2433 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#d8705b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="店長クロック" />
+  <title>ハリネズミカフェ店長クロック</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <style>
+    :root{
+      --bg:#fffaf2;
+      --paper:rgba(255,249,239,.88);
+      --paper-strong:rgba(255,252,246,.94);
+      --ink:#5b4637;
+      --muted:#7d6655;
+      --accent:#d8705b;
+      --accent2:#f2c572;
+      --border:2px solid rgba(115,86,58,.14);
+      --shadow:0 12px 24px rgba(73,52,38,.14);
+      --sky-top:#9fd3ff;
+      --sky-mid:#dff3ff;
+      --sky-bottom:#fff2da;
+      --ground:#9db582;
+      --floor:#f3c586;
+      --window-glow:rgba(255,255,255,.34);
+      --star-opacity:0;
+      --sun-opacity:1;
+      --moon-opacity:0;
+      --lamp-opacity:.15;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:"Yu Gothic UI","Hiragino Sans","Meiryo",sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at 12% 12%, rgba(255,242,214,.85) 0, rgba(255,242,214,0) 14%),
+        radial-gradient(circle at 88% 18%, rgba(252,232,191,.75) 0, rgba(252,232,191,0) 12%),
+        linear-gradient(180deg,#fffaf2,#fff6ea 55%,#fff0de);
+      overflow:hidden;
+      touch-action:manipulation;
+    }
+    .app{
+      height:100dvh;
+      padding:max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+      display:grid;
+      grid-template-columns:minmax(270px, 360px) 1fr;
+      gap:14px;
+    }
+    .panel{
+      background:var(--paper);
+      border:var(--border);
+      border-radius:26px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(8px);
+    }
+    .sidebar{
+      display:grid;
+      gap:12px;
+      align-content:start;
+      min-height:0;
+      height:100%;
+      overflow-y:auto;
+      overflow-x:hidden;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;
+      touch-action:pan-y;
+      padding-right:2px;
+      scrollbar-width:thin;
+    }
+    .card{
+      padding:14px 16px;
+      background:var(--paper);
+      border:var(--border);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+    }
+    .card h1,.card h2,.card h3,.card p{margin:0}
+    .brand{
+      padding:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,246,233,.94));
+      position:relative;
+      overflow:hidden;
+    }
+    .brand::before,
+    .brand::after{
+      content:"";
+      position:absolute;
+      border-radius:50%;
+      background:rgba(255,223,186,.28);
+      pointer-events:none;
+    }
+    .brand::before{width:150px;height:150px;top:-70px;right:-35px}
+    .brand::after{width:110px;height:110px;bottom:-50px;left:-25px}
+    .badges{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      padding:5px 10px;
+      border-radius:999px;
+      background:#efe2cf;
+      color:#7a5f4d;
+      font-size:12px;
+      font-weight:800;
+    }
+    .brand h1{font-size:clamp(24px, 2.5vw, 34px);margin-bottom:6px}
+    .brand p{line-height:1.65;color:var(--muted);font-size:14px}
+    .clock{
+      display:grid;
+      gap:12px;
+    }
+    .clock-row{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}
+    .clock-main{font-size:clamp(42px, 6vw, 66px);line-height:1;font-weight:900;letter-spacing:.03em}
+    .clock-sec{font-size:clamp(18px,2.2vw,24px);color:#946f57;font-weight:800;margin-left:6px}
+    .date-main{font-size:clamp(22px, 2.8vw, 34px);font-weight:900}
+    .date-sub{font-size:14px;color:var(--muted);margin-top:4px}
+    .label{font-size:12px;font-weight:800;color:#8f725f;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em}
+    .manager-row{display:grid;grid-template-columns:1fr auto;gap:8px}
+    .manager-input{
+      width:100%;
+      border:1px solid rgba(115,86,58,.18);
+      border-radius:14px;
+      padding:11px 12px;
+      font:inherit;
+      color:var(--ink);
+      background:#fffdf9;
+    }
+
+    .timer-display{
+      font-size:clamp(34px, 4.8vw, 48px);
+      line-height:1;
+      font-weight:900;
+      letter-spacing:.03em;
+      margin-bottom:6px;
+    }
+    .timer-sub{
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.5;
+    }
+    .timer-status{
+      display:inline-flex;
+      align-items:center;
+      padding:5px 9px;
+      border-radius:999px;
+      background:#efe2cf;
+      color:#7a5f4d;
+      font-size:12px;
+      font-weight:900;
+      margin-left:auto;
+    }
+    .timer-status.ringing{
+      background:linear-gradient(180deg,#f7cf8b,#e7b861);
+      color:#654626;
+      animation:ringPulse 1.1s ease-in-out infinite;
+    }
+    .timer-head{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:8px;
+    }
+    .preset-grid, .timer-btn-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      margin-top:10px;
+    }
+    .preset-btn, .ctrl-btn, .toggle-btn{
+      border:none;
+      border-radius:14px;
+      padding:10px 12px;
+      font:inherit;
+      font-weight:800;
+      cursor:pointer;
+      color:var(--ink);
+      background:linear-gradient(180deg,#f4e4c7,#edd5ab);
+      box-shadow:0 8px 16px rgba(91,70,55,.10);
+    }
+    .preset-btn.active{
+      background:linear-gradient(180deg,#d8705b,#c75e48);
+      color:#fff;
+    }
+    .ctrl-btn.primary,.toggle-btn.primary{
+      background:linear-gradient(180deg,#d8705b,#c75e48);
+      color:#fff;
+    }
+    .ctrl-btn.soft,.toggle-btn.soft{
+      background:linear-gradient(180deg,#d6eadf,#c2ddcf);
+      color:#41584d;
+    }
+    .ctrl-btn.muted,.toggle-btn.muted{
+      background:linear-gradient(180deg,#efe5db,#e6d9cd);
+      color:#5c4a3f;
+    }
+    .custom-row{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:8px;
+      margin-top:10px;
+    }
+    .custom-input, .range-input{
+      width:100%;
+      accent-color:var(--accent);
+    }
+    .custom-number{
+      width:100%;
+      border:1px solid rgba(115,86,58,.18);
+      border-radius:14px;
+      padding:10px 12px;
+      font:inherit;
+      color:var(--ink);
+      background:#fffdf9;
+    }
+    .range-row{
+      display:grid;
+      gap:6px;
+      margin-top:10px;
+    }
+    .range-head{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      align-items:center;
+      font-size:12px;
+      color:#8d715d;
+      font-weight:800;
+    }
+    .audio-note{
+      font-size:12px;
+      line-height:1.6;
+      color:#856a58;
+      margin-top:8px;
+    }
+    .timer-banner{
+      display:none;
+      padding:10px 14px;
+      border-radius:18px;
+      background:linear-gradient(180deg,#fff2d3,#ffe5aa);
+      border:var(--border);
+      box-shadow:var(--shadow);
+      font-size:14px;
+      line-height:1.6;
+      font-weight:900;
+      color:#6a4b2f;
+    }
+    .timer-banner.show{display:block}
+    .inline-test-stop{
+      box-shadow:0 10px 18px rgba(73,52,38,.18);
+      width:100%;
+    }
+    .bgm-main-btn-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      margin-top:10px;
+    }
+    .test-stop-slot{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      margin-top:8px;
+      min-height:50px;
+    }
+    .test-stop-slot .inline-test-stop{
+      grid-column:2;
+    }
+    @keyframes ringPulse{
+      0%,100%{transform:scale(1)}
+      50%{transform:scale(1.04)}
+    }
+    .mini-btn{
+      border:none;
+      border-radius:14px;
+      background:linear-gradient(180deg,#f0d79f,#e8c87b);
+      color:#5c4437;
+      padding:11px 14px;
+      font:inherit;
+      font-weight:800;
+      cursor:pointer;
+      box-shadow:0 8px 16px rgba(91,70,55,.11);
+    }
+    .comment-list{display:grid;gap:10px}
+    .comment-item{
+      padding:12px 14px;
+      border-radius:18px;
+      border:var(--border);
+      background:var(--paper-strong);
+      line-height:1.6;
+      box-shadow:0 8px 18px rgba(91,70,55,.08);
+    }
+    .comment-head{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:12px;color:#8d715d;font-weight:800;margin-bottom:4px}
+    .comment-body{font-size:14px}
+    .hint{font-size:12px;color:#8f735f;line-height:1.65}
+    .stage-wrap{
+      min-width:0;
+      min-height:0;
+      height:100%;
+      display:block;
+      overflow-y:auto;
+      overflow-x:hidden;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;
+      touch-action:pan-y;
+    }
+    .stage-card{
+      min-height:100%;
+      display:grid;
+      grid-template-rows:auto 1fr auto;
+      overflow:visible;
+      min-height:100%;
+    }
+    .stage-header{
+      padding:16px 18px 10px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .stage-header h2{font-size:26px;margin-bottom:4px}
+    .stage-header p{font-size:14px;color:var(--muted);line-height:1.65;max-width:720px}
+    .scene-stage{
+      position:relative;
+      min-height:320px;
+      overflow:hidden;
+      margin:0 14px;
+      border-radius:26px;
+      border:var(--border);
+      background:linear-gradient(180deg,var(--sky-top) 0%, var(--sky-mid) 44%, var(--sky-bottom) 63%, var(--floor) 64%, var(--ground) 100%);
+      box-shadow:inset 0 0 0 2px rgba(255,255,255,.45);
+      cursor:pointer;
+      isolation:isolate;
+    }
+    .scene-stage::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(circle at 14% 16%, rgba(255,255,255,.36), transparent 16%),
+        radial-gradient(circle at 82% 18%, rgba(255,255,255,.28), transparent 14%),
+        linear-gradient(180deg, transparent 0, transparent 75%, rgba(0,0,0,.05) 100%);
+      pointer-events:none;
+      z-index:0;
+    }
+    .stars{
+      position:absolute;
+      inset:0;
+      opacity:var(--star-opacity);
+      z-index:0;
+      pointer-events:none;
+      background-image:
+        radial-gradient(circle at 8% 18%, rgba(255,255,255,.95) 0 1.4px, transparent 1.6px),
+        radial-gradient(circle at 20% 12%, rgba(255,255,255,.85) 0 1.3px, transparent 1.5px),
+        radial-gradient(circle at 33% 24%, rgba(255,255,255,.85) 0 1.6px, transparent 1.8px),
+        radial-gradient(circle at 56% 14%, rgba(255,255,255,.9) 0 1.4px, transparent 1.6px),
+        radial-gradient(circle at 68% 20%, rgba(255,255,255,.92) 0 1.5px, transparent 1.7px),
+        radial-gradient(circle at 81% 12%, rgba(255,255,255,.9) 0 1.4px, transparent 1.6px),
+        radial-gradient(circle at 92% 22%, rgba(255,255,255,.88) 0 1.5px, transparent 1.7px);
+    }
+    .sky-body{position:absolute;inset:0;z-index:0;pointer-events:none}
+    .sun,.moon{
+      position:absolute;
+      border-radius:50%;
+      transition:transform .8s ease, opacity .8s ease;
+      filter:drop-shadow(0 0 24px rgba(255,255,255,.32));
+    }
+    .sun{
+      width:78px;height:78px;right:9%;top:10%;
+      background:radial-gradient(circle at 35% 35%, #fff6c4 0, #ffe18b 42%, #f7bc54 100%);
+      opacity:var(--sun-opacity);
+      box-shadow:0 0 0 16px rgba(255,224,137,.14);
+    }
+    .moon{
+      width:62px;height:62px;left:10%;top:10%;
+      background:radial-gradient(circle at 35% 35%, #fefcff 0, #efe8fb 46%, #d2d0f4 100%);
+      opacity:var(--moon-opacity);
+      box-shadow:0 0 0 14px rgba(236,235,255,.12);
+    }
+    .window-glow{
+      position:absolute;inset:0;z-index:1;pointer-events:none;
+      background:linear-gradient(180deg, transparent, rgba(255,255,255,.06) 52%, var(--window-glow) 100%);
+    }
+    .cafe-awning{
+      position:absolute;
+      left:50%; top:22px; transform:translateX(-50%);
+      width:min(88%, 760px);
+      height:64px;
+      background:repeating-linear-gradient(90deg,#e9765f 0 50px,#fff5e7 50px 100px);
+      border-radius:24px 24px 12px 12px;
+      border:3px solid rgba(110,78,55,.18);
+      box-shadow:0 12px 0 rgba(255,255,255,.45) inset;
+      z-index:2;
+    }
+    .cafe-sign{
+      position:absolute;
+      left:50%; top:98px; transform:translateX(-50%);
+      padding:12px 18px;
+      border-radius:16px;
+      background:rgba(255,248,236,.95);
+      border:var(--border);
+      box-shadow:var(--shadow);
+      font-weight:900;
+      letter-spacing:.08em;
+      z-index:2;
+    }
+    .counter{
+      position:absolute;
+      left:50%; bottom:74px; transform:translateX(-50%);
+      width:min(90%, 780px);
+      height:90px;
+      border-radius:24px;
+      background:linear-gradient(180deg,#b78358,#9f6b42);
+      box-shadow:0 -8px 0 rgba(255,255,255,.22) inset;
+      border:3px solid rgba(95,66,43,.18);
+      z-index:2;
+    }
+    .counter::after{
+      content:"";
+      position:absolute;
+      left:5%;right:5%;top:14px;height:8px;border-radius:999px;
+      background:rgba(255,255,255,.14);
+    }
+    .plant,.menu-board,.cookie-jar,.lamp{
+      position:absolute;
+      z-index:2;
+    }
+    .plant{left:22px;bottom:168px;width:96px;height:118px}
+    .menu-board{right:126px;bottom:168px;width:116px;height:118px}
+    .cookie-jar{right:26px;bottom:168px;width:96px;height:118px}
+    .lamp{
+      left:50%;top:0;transform:translateX(-50%);
+      width:170px;height:138px;opacity:var(--lamp-opacity);pointer-events:none;
+    }
+    .scene-critters{position:absolute;inset:0;z-index:3}
+    .scene-walker{
+      position:absolute;
+      width:128px;
+      height:138px;
+      transform:translate(-50%, -100%);
+      border:none;
+      background:transparent;
+      padding:0;
+      cursor:pointer;
+      z-index:4;
+      filter:drop-shadow(0 10px 14px rgba(91,70,55,.18));
+      transition:filter .22s ease;
+    }
+    .scene-walker:hover{filter:drop-shadow(0 14px 18px rgba(91,70,55,.24))}
+    .scene-walker.walking .scene-svg{animation:walkerBob .5s ease-in-out infinite alternate}
+    .scene-walker.walking .scene-shadow{transform:translateX(-50%) scaleX(1.08)}
+    .scene-svg{display:block;width:100%;height:100%}
+    .scene-shadow{
+      position:absolute;
+      left:50%;bottom:6px;
+      width:48px;height:12px;
+      border-radius:50%;
+      background:rgba(91,70,55,.18);
+      transform:translateX(-50%);
+      z-index:-1;
+      transition:transform .2s ease;
+    }
+    .name-tag{
+      position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);
+      padding:4px 10px;border-radius:999px;
+      background:rgba(255,250,242,.95);
+      border:var(--border);
+      box-shadow:var(--shadow);
+      font-size:11px;font-weight:900;color:#705847;white-space:nowrap;pointer-events:none;
+    }
+    .speech{
+      position:absolute;
+      min-width:88px;
+      max-width:126px;
+      transform:translate(-50%, -100%);
+      padding:6px 8px;
+      border-radius:16px;
+      background:rgba(255,255,255,.94);
+      border:var(--border);
+      box-shadow:var(--shadow);
+      font-size:10px;
+      line-height:1.34;
+      color:#694f40;
+      z-index:5;
+      pointer-events:none;
+      display:none;
+      opacity:0;
+      transition:opacity .25s ease, transform .25s ease;
+    }
+    .speech.show{display:block;opacity:1;}
+    .speech::after{
+      content:"";
+      position:absolute;
+      left:22px;bottom:-8px;
+      width:14px;height:14px;
+      background:rgba(255,255,255,.94);
+      border-right:var(--border);
+      border-bottom:var(--border);
+      transform:rotate(45deg);
+    }
+    .speech.inside{
+      transform:translate(-50%, 0);
+    }
+    .speech.side{
+      transform:none;
+    }
+    .speech.side::after{display:none}
+    .speech.inside::after{
+      display:none;
+    }
+    .tap-note{
+      position:absolute;
+      left:50%;bottom:10px;transform:translateX(-50%);
+      width:min(calc(100% - 22px), 430px);
+      padding:6px 10px;
+      border-radius:18px;
+      background:rgba(255,255,255,.88);
+      border:var(--border);
+      color:#775f4f;font-size:10px;font-weight:800;z-index:4;
+      pointer-events:none;
+      white-space:normal;
+      text-align:center;
+      line-height:1.4;
+    }
+    .target-mark{
+      position:absolute;
+      width:18px;height:18px;border-radius:50%;
+      border:3px solid rgba(255,255,255,.95);
+      background:rgba(216,112,91,.36);
+      box-shadow:0 0 0 8px rgba(216,112,91,.12);
+      transform:translate(-50%, -50%) scale(.5);
+      opacity:0;pointer-events:none;z-index:4;
+    }
+    .target-mark.show{animation:targetPulse .65s ease}
+    .stage-footer{
+      padding:12px 18px 16px;
+      display:grid;
+      gap:10px;
+    }
+    .scene-bubble{
+      padding:13px 16px;
+      background:rgba(255,255,255,.95);
+      border-radius:22px;
+      border:var(--border);
+      box-shadow:var(--shadow);
+      font-size:14px;
+      line-height:1.7;
+    }
+    .scene-meta{display:flex;gap:8px;flex-wrap:wrap}
+    .scene-chip{
+      padding:7px 10px;
+      border-radius:999px;
+      background:#efe3d3;
+      color:#785d4b;
+      font-size:12px;
+      font-weight:900;
+    }
+    .rotate-note{display:none}
+    @keyframes walkerBob{from{transform:translateY(0)}to{transform:translateY(-4px)}}
+    @keyframes targetPulse{
+      0%{opacity:1;transform:translate(-50%,-50%) scale(.4)}
+      70%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+      100%{opacity:0;transform:translate(-50%,-50%) scale(1.3)}
+    }
+    @media (max-width: 980px){
+      .app{grid-template-columns:320px 1fr}
+      .scene-walker{width:116px;height:126px}
+      .speech{max-width:150px}
+      .cafe-awning{height:58px}
+      .counter{height:82px}
+    }
+    @media (orientation: landscape) and (max-height: 620px){
+      body{overflow:hidden}
+      .app{
+        gap:8px;
+        padding:max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+        grid-template-columns:minmax(208px, 258px) 1fr;
+      }
+      .sidebar{
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+        overflow-y:auto;
+        overflow-x:hidden;
+      }
+      #clockCard{order:1}
+      #timerCard{order:2}
+      #bgmCard{order:3}
+      #commentsCard{order:4}
+      #managerCard{order:5;margin-top:auto}
+      #timerCard .audio-note{display:none}
+      .stage-card{grid-template-rows:auto minmax(210px, 1fr) auto}
+      .scene-stage{margin:0 8px;min-height:210px}
+      .card,.brand{padding:9px 11px}
+      .brand{display:none}
+      .clock{gap:6px}
+      .clock-row{gap:8px}
+      .clock-main{font-size:clamp(34px,4.6vw,46px)}
+      .clock-sec{font-size:13px;margin-left:3px}
+      .date-main{font-size:clamp(16px,1.9vw,21px)}
+      .date-sub,.hint,.comment-body{font-size:10px;line-height:1.35}
+      .label,.comment-head,.scene-chip{font-size:9px}
+      .manager-input,.mini-btn,.preset-btn,.ctrl-btn,.toggle-btn{padding:7px 8px;border-radius:11px;font-size:10px}
+      .timer-head{margin-bottom:6px}
+      .timer-status{font-size:10px;padding:6px 8px}
+      .comment-list{gap:5px}
+      .preset-grid,.timer-btn-grid,.bgm-main-btn-grid,.test-stop-slot{gap:5px;margin-top:7px}
+      .timer-display{font-size:clamp(24px,3.8vw,32px)}
+      .timer-sub,.audio-note{font-size:9px;line-height:1.35}
+      .custom-row{gap:5px;margin-top:7px}
+      .custom-number{padding:7px 8px;border-radius:11px;font-size:10px}
+      .range-row{gap:4px;margin-top:8px}
+      .range-head{font-size:9px}
+      .timer-banner{padding:6px 9px;font-size:9px;line-height:1.35;border-radius:13px}
+      .comment-item{padding:7px 8px;border-radius:13px}
+      .stage-header{padding:8px 12px 4px}
+      .stage-header h2{font-size:20px;margin-bottom:1px;line-height:1.15}
+      .stage-header p{font-size:11px;line-height:1.35;max-width:none}
+      .scene-meta{gap:6px}
+      .scene-chip{padding:6px 9px}
+      .scene-stage{margin:0 8px}
+      .cafe-awning{top:12px;height:46px}
+      .cafe-sign{top:66px;padding:6px 12px;font-size:11px}
+      .counter{bottom:48px;height:62px;border-radius:20px}
+      .plant,.menu-board,.cookie-jar{bottom:108px}
+      .plant{left:14px;width:64px;height:80px}
+      .menu-board{right:80px;width:76px;height:82px}
+      .cookie-jar{right:12px;width:64px;height:80px}
+      .lamp{width:140px;height:112px}
+      .scene-walker{width:92px;height:100px}
+      .speech{min-width:78px;max-width:106px;padding:4px 7px;font-size:8.5px;line-height:1.28}
+      .name-tag{font-size:9px;padding:3px 7px;bottom:-6px}
+      .tap-note{
+        bottom:6px;
+        width:min(calc(100% - 14px), 340px);
+        padding:3px 7px;
+        font-size:8.5px;
+        line-height:1.25;
+        border-radius:12px;
+      }
+      .stage-footer{padding:6px 10px 8px}
+      .scene-bubble{padding:8px 11px;font-size:11px;line-height:1.45;border-radius:18px}
+    }
+    @media (orientation: landscape) and (max-height: 540px){
+      .app{grid-template-columns:minmax(196px, 232px) 1fr;gap:6px}
+      .sidebar{gap:4px}
+      .stage-card{grid-template-rows:auto minmax(198px, 1fr) auto}
+      .scene-stage{min-height:198px}
+      .clock-main{font-size:clamp(32px,4.8vw,42px)}
+      .clock-sec{font-size:12px}
+      .date-main{font-size:clamp(15px,1.7vw,19px)}
+      .comment-item{padding:6px 7px}
+      .preset-grid,.timer-btn-grid,.bgm-main-btn-grid,.test-stop-slot{gap:4px;margin-top:6px}
+      .timer-display{font-size:clamp(22px,3.7vw,28px)}
+      .timer-sub,.audio-note{font-size:8px;line-height:1.28}
+      .custom-row{gap:4px;margin-top:6px}
+      .custom-number{padding:6px 7px;font-size:9px}
+      .manager-input,.mini-btn,.preset-btn,.ctrl-btn,.toggle-btn{padding:6px 7px;font-size:9px;border-radius:10px}
+      .range-row{gap:3px;margin-top:6px}
+      .range-head{font-size:8px}
+      .timer-banner{padding:5px 8px;font-size:8px;line-height:1.28;border-radius:11px}
+      .comment-body{font-size:9px;line-height:1.28}
+      .stage-header{padding:6px 10px 3px}
+      .stage-header h2{font-size:18px}
+      .stage-header p{font-size:10px;line-height:1.3}
+      .scene-chip{padding:5px 8px;font-size:9px}
+      .scene-stage{margin:0 7px}
+      .cafe-awning{top:9px;height:40px}
+      .cafe-sign{top:58px;padding:5px 10px;font-size:10px}
+      .counter{bottom:42px;height:56px}
+      .plant,.menu-board,.cookie-jar{bottom:96px}
+      .plant{left:10px;width:56px;height:70px}
+      .menu-board{right:66px;width:66px;height:72px}
+      .cookie-jar{right:9px;width:56px;height:70px}
+      .lamp{width:126px;height:98px}
+      .scene-walker{width:84px;height:92px}
+      .speech{min-width:72px;max-width:98px;padding:4px 6px;font-size:8px;line-height:1.22}
+      .tap-note{
+        width:min(calc(100% - 14px), 300px);
+        font-size:7.5px;
+        line-height:1.2;
+        padding:3px 6px;
+        bottom:5px;
+        border-radius:10px;
+      }
+      .stage-footer{padding:5px 9px 7px}
+      .scene-bubble{padding:7px 10px;font-size:10px;line-height:1.35}
+    }
+    @media (orientation: portrait){
+      body{overflow:auto}
+      .app{grid-template-columns:1fr;grid-template-rows:auto auto;height:auto;min-height:100dvh}
+      .test-stop-slot{grid-template-columns:repeat(3,minmax(0,1fr));}
+      .test-stop-slot .inline-test-stop{grid-column:2}
+      .rotate-note{
+        display:block;
+        margin-top:8px;
+        font-size:12px;
+        color:#8d715d;
+      }
+      .scene-stage{min-height:56dvh}
+      .tap-note{white-space:normal;text-align:center;max-width:88%}
+    }
+    @media (max-width: 700px){
+      .app{padding:10px;gap:10px}
+      .stage-header{padding:14px 14px 8px}
+      .stage-card{border-radius:20px}
+      .scene-stage{margin:0 10px}
+      .stage-footer{padding:10px 14px 14px}
+      .clock-main{font-size:40px}
+      .date-main{font-size:24px}
+      .manager-row{grid-template-columns:1fr}
+      .preset-grid,.timer-btn-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .bgm-main-btn-grid,.test-stop-slot{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .test-stop-slot .inline-test-stop{grid-column:2}
+      .custom-row{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="sidebar">
+      <section class="card brand">
+        <div class="badges">
+          <span class="badge">横向きスマホ向け</span>
+          <span class="badge">ホーム画面対応</span>
+          <span class="badge">店長クロック</span>
+        </div>
+        <h1>ハリネズミカフェ店長クロック</h1>
+        <p>店長さんのための、やさしい時計兼カレンダーです。時間帯でカフェの景色が変わり、ハリネズミたちも15分ごと・日替わりでおしゃべりします。</p>
+        <p class="rotate-note">縦向きでも動きますが、横向きのほうがカフェ全景を見やすいです。</p>
+      </section>
+
+      <section class="card clock" id="clockCard">
+        <div class="label">Clock</div>
+        <div class="clock-row">
+          <div>
+            <div class="clock-main"><span id="clockText">00:00</span><span class="clock-sec" id="secondsText">00</span></div>
+            <div class="date-sub" id="greetingText">店長さん、おはようございます。</div>
+          </div>
+        </div>
+        <div>
+          <div class="date-main" id="dateText">4月3日（金）</div>
+          <div class="date-sub" id="yearText">2026年</div>
+        </div>
+      </section>
+
+      <section class="card" id="managerCard">
+        <div class="label">Manager</div>
+        <div class="manager-row">
+          <input id="managerNameInput" class="manager-input" maxlength="12" placeholder="店長名を入力" value="店長" />
+          <button id="installHintBtn" class="mini-btn" type="button">設置ヒント</button>
+        </div>
+        <p class="hint" id="installHintText">Safariで開いて「共有」→「ホーム画面に追加」で、1タップ起動のWebアプリにできます。</p>
+      </section>
+
+
+      <section class="card" id="timerCard">
+        <div class="label">Timer</div>
+        <div class="timer-head">
+          <div>
+            <div class="timer-display" id="timerDisplay">20:00</div>
+            <div class="timer-sub" id="timerInfoText">20分タイマーを準備中です。</div>
+          </div>
+          <span class="timer-status" id="timerStatus">未開始</span>
+        </div>
+        <div class="preset-grid" id="presetGrid">
+          <button class="preset-btn" type="button" data-minutes="5">5分</button>
+          <button class="preset-btn" type="button" data-minutes="10">10分</button>
+          <button class="preset-btn" type="button" data-minutes="15">15分</button>
+          <button class="preset-btn active" type="button" data-minutes="20">20分</button>
+          <button class="preset-btn" type="button" data-minutes="30">30分</button>
+          <button class="preset-btn" type="button" data-minutes="60">60分</button>
+        </div>
+        <div class="custom-row">
+          <input id="customMinutesInput" class="custom-number" type="text" inputmode="text" placeholder="自由入力（例: 2分30秒 / 2:30 / 90秒）" />
+          <button id="applyCustomBtn" class="mini-btn" type="button">反映</button>
+        </div>
+        <div class="timer-btn-grid">
+          <button id="timerStartBtn" class="ctrl-btn primary" type="button">開始</button>
+          <button id="timerPauseBtn" class="ctrl-btn soft" type="button">一時停止</button>
+          <button id="timerResetBtn" class="ctrl-btn muted" type="button">リセット</button>
+          <button id="timerStopAlarmBtn" class="ctrl-btn primary" type="button">停止</button>
+        </div>
+        <p class="audio-note">終了時は「おつかれさま」を表示して、ハリネズミたちが少し集まり、終了音が停止ボタンを押すまで鳴り続けます。</p>
+      </section>
+
+      <section class="card" id="bgmCard">
+        <div class="label">BGM</div>
+        <div class="timer-head">
+          <div>
+            <div class="timer-sub" style="font-size:15px;font-weight:900;color:var(--ink);margin-bottom:3px" id="bgmTrackText">未開始</div>
+            <div class="timer-sub" id="bgmStatusText">最初のタップで、その時間帯のBGMを流します。</div>
+          </div>
+          <button id="bgmToggleBtn" class="toggle-btn primary" type="button">BGM ON</button>
+        </div>
+        <div class="range-row">
+          <div class="range-head"><span>BGM音量</span><span id="bgmVolumeLabel">35%</span></div>
+          <input id="bgmVolumeRange" class="range-input" type="range" min="0" max="100" value="35" />
+        </div>
+        <div class="range-row">
+          <div class="range-head"><span>タイマー音量</span><span id="bellVolumeLabel">55%</span></div>
+          <input id="bellVolumeRange" class="range-input" type="range" min="0" max="100" value="55" />
+        </div>
+        <div class="bgm-main-btn-grid">
+          <button id="loadAudioBtn" class="ctrl-btn soft" type="button">音源を読み込む</button>
+          <button id="testBellBtn" class="ctrl-btn primary" type="button">終了音テスト</button>
+          <button id="clearAudioBtn" class="ctrl-btn muted" type="button">読込を戻す</button>
+        </div>
+        <div class="test-stop-slot">
+          <button id="stopTestBellBtn" class="ctrl-btn soft inline-test-stop" type="button" style="display:none">テスト終了</button>
+        </div>
+        <input id="audioFilesInput" type="file" accept=".mp3,audio/mpeg,audio/mp3" multiple hidden />
+        <p class="audio-note" id="audioPathHint" style="display:none"></p>
+      </section>
+      <section class="card" id="commentsCard">
+        <div class="label">Hedgehog Comments</div>
+        <div class="comment-list">
+          <div class="comment-item">
+            <div class="comment-head"><span>24時間の景色コメント</span><span id="sceneSlotLabel">朝</span></div>
+            <div class="comment-body" id="hourComment">朝の光がやわらかく差しています。</div>
+          </div>
+          <div class="comment-item">
+            <div class="comment-head"><span>15分ごとのつぶやき</span><span id="quarterLabel">00〜14分</span></div>
+            <div class="comment-body" id="quarterComment">まもなく店内の空気が入れ替わる時間です。</div>
+          </div>
+          <div class="comment-item">
+            <div class="comment-head"><span>今日のひとこと</span><span id="dailyLabel">日替わり</span></div>
+            <div class="comment-body" id="dailyComment">今日はゆっくり、でも丁寧にいきましょう。</div>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <section class="panel stage-wrap">
+      <div class="stage-card">
+        <div class="stage-header">
+          <div>
+            <h2>ひだまりのカフェホール</h2>
+            <p id="sceneSummary">窓の外の色と店内のぬくもりが、時間に合わせて少しずつ変わっていきます。</p>
+          </div>
+          <div class="scene-meta">
+            <span class="scene-chip" id="pwaStateChip">ブラウザ表示</span>
+            <span class="scene-chip" id="nextChangeChip">次の15分更新まで 00:00</span>
+          </div>
+        </div>
+
+        <div class="scene-stage" id="sceneStage" aria-label="カフェの景色">
+          <div class="stars"></div>
+          <div class="sky-body">
+            <div class="sun"></div>
+            <div class="moon"></div>
+          </div>
+          <div class="window-glow"></div>
+          <div class="lamp" aria-hidden="true">
+            <svg viewBox="0 0 180 140" width="100%" height="100%">
+              <path d="M90 0 L90 42" stroke="rgba(120,89,63,.55)" stroke-width="6" stroke-linecap="round"/>
+              <path d="M54 44 H126 L112 82 H68 Z" fill="rgba(255,226,152,.82)" stroke="rgba(120,89,63,.22)" stroke-width="3"/>
+              <ellipse cx="90" cy="98" rx="54" ry="16" fill="rgba(255,223,156,.28)"/>
+            </svg>
+          </div>
+          <div class="cafe-awning"></div>
+          <div class="cafe-sign">CAFE HARIHARI</div>
+          <div class="plant" aria-hidden="true">
+            <svg viewBox="0 0 100 120" width="100%" height="100%"><rect x="29" y="78" width="42" height="28" rx="8" fill="#b97d54"/><path d="M49 25 C33 36 31 56 49 68 C67 57 66 36 49 25Z" fill="#7ba78e"/><path d="M67 34 C53 40 50 60 63 72 C79 64 81 45 67 34Z" fill="#8ebd9f"/><path d="M33 39 C20 47 20 64 34 73 C48 64 47 47 33 39Z" fill="#96c9a7"/></svg>
+          </div>
+          <div class="menu-board" aria-hidden="true">
+            <svg viewBox="0 0 120 120" width="100%" height="100%"><rect x="18" y="15" width="84" height="62" rx="10" fill="#6e523f"/><rect x="24" y="21" width="72" height="50" rx="8" fill="#f9f2da"/><text x="60" y="40" text-anchor="middle" font-size="11" fill="#6e523f" font-weight="700">本日の</text><text x="60" y="57" text-anchor="middle" font-size="10" fill="#6e523f">店長ブレンド</text><path d="M42 77 L32 104" stroke="#8f6a50" stroke-width="6" stroke-linecap="round"/><path d="M78 77 L88 104" stroke="#8f6a50" stroke-width="6" stroke-linecap="round"/></svg>
+          </div>
+          <div class="cookie-jar" aria-hidden="true">
+            <svg viewBox="0 0 100 120" width="100%" height="100%"><rect x="27" y="23" width="46" height="16" rx="8" fill="#d9b17a"/><rect x="20" y="34" width="60" height="62" rx="18" fill="#eaf6ff" stroke="#b4ccdd" stroke-width="3"/><circle cx="39" cy="58" r="8" fill="#f2c572"/><circle cx="58" cy="65" r="7" fill="#e9b45f"/><circle cx="50" cy="78" r="9" fill="#f7cf7d"/></svg>
+          </div>
+          <div class="counter"></div>
+          <div class="target-mark" id="targetMark"></div>
+          <div class="scene-critters" id="sceneCritters"></div>
+          <div class="tap-note">カフェをタップすると、ハリネズミたちが店長さんの指示した場所へ集まってきます</div>
+        </div>
+
+        <div class="stage-footer">
+          <div class="timer-banner" id="timerBanner">おつかれさまです。タイマーが終わりました。停止ボタンで終了音を止められます。</div>
+          <div class="scene-bubble" id="sceneBubble">「店長さん、今日もいい景色です！」と、ハリネズミたちが店の中をてちてち歩いています。</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'hedgehog-cafe-clock-v1';
+    const SCENE_SEGMENTS = [
+      {
+        key:'deepNight', label:'深夜', start:0, end:4,
+        summary:'深い夜のあいだは、窓の外の空気までしんと澄んで、カップのぬくもりだけがやさしく残っています。',
+        greeting:'店長さん、夜ふかし営業おつかれさまです。',
+        hourLines:[
+          '「みんな寝静まっていても、ここだけは小さな灯りがともってるね」',
+          '「深夜のカフェは、秘密基地みたいでわくわくするよ」',
+          '「店長さんの机に、あったかい飲みものをそっと置いておくね」'
+        ],
+        colors:{
+          skyTop:'#18243b', skyMid:'#30415f', skyBottom:'#56627d', ground:'#7f8f76', floor:'#ba996a', windowGlow:'rgba(255,230,170,.16)', starOpacity:.95, sunOpacity:0, moonOpacity:1, lampOpacity:.95
+        }
+      },
+      {
+        key:'dawn', label:'明け方', start:4, end:6,
+        summary:'夜の藍色にうす桃の光が混ざりはじめ、店先に一日の予感がそっと差しこみます。',
+        greeting:'店長さん、朝の仕込みの時間です。',
+        hourLines:[
+          '「明け方の空って、いちばんやわらかい色をしてるよね」',
+          '「そろそろ一日目の香りが店じゅうにひろがるよ」',
+          '「朝いちばんの深呼吸、店長さんもいっしょにどう？」'
+        ],
+        colors:{
+          skyTop:'#6a7da4', skyMid:'#f4c4c1', skyBottom:'#fde8ca', ground:'#95ad81', floor:'#efc98a', windowGlow:'rgba(255,214,170,.22)', starOpacity:.25, sunOpacity:.45, moonOpacity:.45, lampOpacity:.58
+        }
+      },
+      {
+        key:'morning', label:'朝', start:6, end:10,
+        summary:'朝の光がテーブルにこぼれ、サンバイザーのつばが花びらみたいな影を落としています。',
+        greeting:'店長さん、おはようございます。',
+        hourLines:[
+          '「朝の光で、カップまできらきらして見えるよ」',
+          '「いちばん気持ちいい時間だから、窓もぴかっとしておきたいな」',
+          '「店長さん、おはようの一杯はもう決めた？」'
+        ],
+        colors:{
+          skyTop:'#9fd3ff', skyMid:'#dff3ff', skyBottom:'#fff2da', ground:'#9db582', floor:'#f3c586', windowGlow:'rgba(255,255,255,.34)', starOpacity:0, sunOpacity:1, moonOpacity:0, lampOpacity:.12
+        }
+      },
+      {
+        key:'lateMorning', label:'午前', start:10, end:12,
+        summary:'午前の明るい空気に包まれて、木の床の色まで少し軽やかに見えてきます。',
+        greeting:'店長さん、いい流れで午前を進めましょう。',
+        hourLines:[
+          '「この時間のカフェは、いちばん晴れやかな顔をしてるよ」',
+          '「看板もテーブルも、今日は上機嫌みたいだね」',
+          '「常連さんが来る前に、もうひと呼吸だけ整えておこう」'
+        ],
+        colors:{
+          skyTop:'#8ecfff', skyMid:'#d7f1ff', skyBottom:'#ffefcf', ground:'#98b47d', floor:'#f2c17a', windowGlow:'rgba(255,255,255,.28)', starOpacity:0, sunOpacity:1, moonOpacity:0, lampOpacity:.08
+        }
+      },
+      {
+        key:'noon', label:'お昼', start:12, end:15,
+        summary:'お昼の陽ざしで店内がいっそう明るくなり、木の棚もカップもつやつやしています。',
+        greeting:'店長さん、お昼のにぎわいが来ています。',
+        hourLines:[
+          '「お昼のカフェは、にぎやかな音までおいしそうに聞こえるね」',
+          '「グラスの氷まで、今日はちょっと自慢げに見えるよ」',
+          '「店長さん、いちばん元気な時間だから笑顔多めでいこう！」'
+        ],
+        colors:{
+          skyTop:'#84c9ff', skyMid:'#d4f0ff', skyBottom:'#fff1cf', ground:'#95b77d', floor:'#efbe73', windowGlow:'rgba(255,255,255,.22)', starOpacity:0, sunOpacity:1, moonOpacity:0, lampOpacity:.05
+        }
+      },
+      {
+        key:'afternoon', label:'午後', start:15, end:18,
+        summary:'やわらかな午後の色が店内へ落ち着きを運び、少しだけゆっくりした時間が流れています。',
+        greeting:'店長さん、午後もひと息つきつついきましょう。',
+        hourLines:[
+          '「午後の光って、ちょっとだけおやつの匂いがする気がする」',
+          '「この時間のカフェは、ほんの少しだけのんびり顔だね」',
+          '「店長さんの足音まで、午後はやわらかく聞こえるよ」'
+        ],
+        colors:{
+          skyTop:'#9cc7ff', skyMid:'#f0dfbf', skyBottom:'#f7d7a8', ground:'#95a772', floor:'#ebbb70', windowGlow:'rgba(255,236,190,.16)', starOpacity:0, sunOpacity:.78, moonOpacity:0, lampOpacity:.08
+        }
+      },
+      {
+        key:'sunset', label:'夕方', start:18, end:20,
+        summary:'夕焼けがガラスににじみ、店の中までほんのり桃色と琥珀色に染まっています。',
+        greeting:'店長さん、夕方の灯りがきれいです。',
+        hourLines:[
+          '「夕方になると、カフェごと焼き菓子みたいな色になるね」',
+          '「看板の文字まで、夕焼け色でやさしく見えるよ」',
+          '「店長さん、今日の景色を覚えておきたくなる時間だね」'
+        ],
+        colors:{
+          skyTop:'#6b7db3', skyMid:'#f0a07f', skyBottom:'#f4d38c', ground:'#8ea06d', floor:'#daa15c', windowGlow:'rgba(255,196,150,.26)', starOpacity:.08, sunOpacity:.46, moonOpacity:.12, lampOpacity:.35
+        }
+      },
+      {
+        key:'night', label:'夜', start:20, end:24,
+        summary:'夜の灯りがふくらみ、カフェ全体が小さな暖炉みたいなぬくもりで包まれています。',
+        greeting:'店長さん、夜の店はしっとり落ち着いています。',
+        hourLines:[
+          '「夜のカフェって、内緒話まで似合うよね」',
+          '「あったかい灯りがあると、窓の外までやさしく見えるなあ」',
+          '「店長さん、今日もお店をきれいに守ってくれてありがとう」'
+        ],
+        colors:{
+          skyTop:'#24324f', skyMid:'#3c4764', skyBottom:'#79637a', ground:'#7d8b6e', floor:'#b48c61', windowGlow:'rgba(255,216,163,.22)', starOpacity:.88, sunOpacity:0, moonOpacity:1, lampOpacity:.92
+        }
+      }
+    ];
+
+    const QUARTER_LINES = [
+      ['「そろそろ空気をふわっと入れ替えたい時間だね」', '「カップの向きも、ちょこんと整えておこうかな」', '「お客さまが来る前の、しずかな準備時間だよ」'],
+      ['「時計の針が進むたびに、お店の気分も少し変わるね」', '「今のうちにおすすめの札をきれいにしておこうっと」', '「店長さん、次の15分もやさしくいこうね」'],
+      ['「窓の外の色、さっきよりちょっとだけ変わったよ」', '「ふかふかの前掛け、今がいちばんいい感じ！」', '「この小さな区切り、なんだか好きなんだ」'],
+      ['「もうすぐ次の15分。お店も呼吸してるみたいだね」', '「少しだけ背すじをのばして、次の景色を待とう」', '「店長さん、今のタイミングで深呼吸どう？」']
+    ];
+
+    const DAILY_LINES = [
+      '「今日は“ていねい”が似合う日。急がなくても、ちゃんと素敵になるよ」',
+      '「今日は看板の前で写真を撮りたくなるみたいな、いい空気だね」',
+      '「今日は小さな親切がよく光る日。店長さんのやさしさが主役かも」',
+      '「今日は木の香りがいつもより落ち着く日。静かな時間を大事にしよう」',
+      '「今日は笑顔がひとつ増えるたび、お店全体が明るくなる気がするよ」',
+      '「今日はお気に入りの席を見つけたくなる日。のんびりした景色が似合うね」',
+      '「今日は“ただいま”って言いたくなる日。帰ってきたくなる店にしよう」',
+      '「今日は湯気までやさしく見える日。あったかい気持ちを忘れずにね」'
+    ];
+
+
+    const AUDIO_PATH_CANDIDATES = ['./cafe_bgm/','cafe_bgm/','./','../cafe_bgm/','../'];
+    const DEFAULT_PRESET_MINUTES = 20;
+    const HEDGEHOGS = [
+      { id:'mugi', kind:'hedgehog', name:'むぎ', visor:'#ef9b57', x:16, y:73, tx:16, ty:73, homeX:16, laneMin:14, laneMax:24, speed:10.8, holdUntil:0, wanderAt:0, speech:'', baseSpeech:'', tapSpeech:'', tapSpeechUntil:0 },
+      { id:'komame', kind:'hedgehog', name:'こまめ', visor:'#79b49f', x:38, y:78, tx:38, ty:78, homeX:38, laneMin:28, laneMax:46, speed:12.4, holdUntil:0, wanderAt:0, speech:'', baseSpeech:'', tapSpeech:'', tapSpeechUntil:0 },
+      { id:'shinamo', kind:'hedgehog', name:'シナモ', visor:'#d28db7', x:62, y:73, tx:62, ty:73, homeX:62, laneMin:52, laneMax:70, speed:10.6, holdUntil:0, wanderAt:0, speech:'', baseSpeech:'', tapSpeech:'', tapSpeechUntil:0 },
+      { id:'okogemaru', kind:'tenrec', name:'おこげ丸', visor:'#f0c76b', x:84, y:69, tx:84, ty:69, homeX:84, laneMin:74, laneMax:86, speed:11.8, holdUntil:0, wanderAt:0, speech:'', baseSpeech:'', tapSpeech:'', tapSpeechUntil:0 }
+    ];
+
+    const WEEKDAYS = ['日','月','火','水','木','金','土'];
+    const bgmPlayers = [new Audio(), new Audio()];
+    bgmPlayers.forEach(a => {
+      a.loop = true;
+      a.preload = 'auto';
+      a.volume = 0;
+      a.playsInline = true;
+      a.setAttribute('playsinline','');
+      a.setAttribute('webkit-playsinline','');
+    });
+    const bellAudio = new Audio();
+    bellAudio.loop = true;
+    bellAudio.preload = 'auto';
+    bellAudio.playsInline = true;
+    bellAudio.setAttribute('playsinline','');
+    bellAudio.setAttribute('webkit-playsinline','');
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext || null;
+    const bellAudioContext = AudioContextClass ? new AudioContextClass() : null;
+    let bellBuffer = null;
+    bellAudio.addEventListener('pause', ()=>{
+      if(bellPauseGuard || document.hidden) return;
+      if(!bellMode) return;
+      if(bellMode === 'test' && bellAudio.ended) return;
+      if(bellMode !== 'test' && bellMode !== 'timer') return;
+      setTimeout(async ()=>{
+        if(bellPauseGuard || document.hidden || bellAudio.ended) return;
+        if(bellMode !== 'test' && bellMode !== 'timer') return;
+        if(!bellAudio.paused) return;
+        try{
+          await bellAudio.play();
+        }catch{}
+      }, 60);
+    });
+
+    const els = {
+      clockText: document.getElementById('clockText'),
+      secondsText: document.getElementById('secondsText'),
+      greetingText: document.getElementById('greetingText'),
+      dateText: document.getElementById('dateText'),
+      yearText: document.getElementById('yearText'),
+      managerNameInput: document.getElementById('managerNameInput'),
+      installHintBtn: document.getElementById('installHintBtn'),
+      installHintText: document.getElementById('installHintText'),
+      sceneSlotLabel: document.getElementById('sceneSlotLabel'),
+      hourComment: document.getElementById('hourComment'),
+      quarterLabel: document.getElementById('quarterLabel'),
+      quarterComment: document.getElementById('quarterComment'),
+      dailyLabel: document.getElementById('dailyLabel'),
+      dailyComment: document.getElementById('dailyComment'),
+      sceneSummary: document.getElementById('sceneSummary'),
+      nextChangeChip: document.getElementById('nextChangeChip'),
+      pwaStateChip: document.getElementById('pwaStateChip'),
+      sceneStage: document.getElementById('sceneStage'),
+      sceneBubble: document.getElementById('sceneBubble'),
+      sceneCritters: document.getElementById('sceneCritters'),
+      targetMark: document.getElementById('targetMark'),
+      timerDisplay: document.getElementById('timerDisplay'),
+      timerInfoText: document.getElementById('timerInfoText'),
+      timerStatus: document.getElementById('timerStatus'),
+      presetGrid: document.getElementById('presetGrid'),
+      customMinutesInput: document.getElementById('customMinutesInput'),
+      applyCustomBtn: document.getElementById('applyCustomBtn'),
+      timerStartBtn: document.getElementById('timerStartBtn'),
+      timerPauseBtn: document.getElementById('timerPauseBtn'),
+      timerResetBtn: document.getElementById('timerResetBtn'),
+      timerStopAlarmBtn: document.getElementById('timerStopAlarmBtn'),
+      timerBanner: document.getElementById('timerBanner'),
+      bgmTrackText: document.getElementById('bgmTrackText'),
+      bgmStatusText: document.getElementById('bgmStatusText'),
+      bgmToggleBtn: document.getElementById('bgmToggleBtn'),
+      bgmVolumeRange: document.getElementById('bgmVolumeRange'),
+      bellVolumeRange: document.getElementById('bellVolumeRange'),
+      bgmVolumeLabel: document.getElementById('bgmVolumeLabel'),
+      bellVolumeLabel: document.getElementById('bellVolumeLabel'),
+      audioPathHint: document.getElementById('audioPathHint'),
+      loadAudioBtn: document.getElementById('loadAudioBtn'),
+      testBellBtn: document.getElementById('testBellBtn'),
+      stopTestBellBtn: document.getElementById('stopTestBellBtn'),
+      clearAudioBtn: document.getElementById('clearAudioBtn'),
+      audioFilesInput: document.getElementById('audioFilesInput')
+    };
+
+    let appState = loadAppState();
+    els.managerNameInput.value = appState.managerName;
+    els.bgmVolumeRange.value = Math.round((appState.bgmVolume ?? 0.35) * 100);
+    els.bellVolumeRange.value = Math.round((appState.bellVolume ?? 0.55) * 100);
+    if((appState.timer.selectedMinutes || 0) <= 0){
+      els.customMinutesInput.value = formatDurationInput(appState.timer.durationMs || 0);
+    }
+
+    let sceneBubbleOverrideText = '';
+    let sceneBubbleOverrideUntil = 0;
+    let audioUnlocked = false;
+    let audioBasePath = '';
+    let activeBgmIndex = 0;
+    const manualAudioUrls = new Map();
+    let manualAudioLoaded = false;
+    let currentBgmTrack = '';
+    let bgmSwitchLock = false;
+    let bgmResumeAfterBell = false;
+    let bellTestResumeBgm = false;
+    let bellMode = 'idle';
+    let timerFinishedHandled = false;
+    let bgmResumeAfterVisibility = false;
+
+    renderCritters();
+    bindUI();
+    updateAll();
+    startAnimation();
+    setInterval(updateAll, 250);
+
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', ()=>{
+        navigator.serviceWorker.register('./sw.js').catch(()=>{});
+      });
+    }
+
+    function defaultAppState(){
+      return {
+        managerName:'店長',
+        bgmEnabled:true,
+        bgmVolume:0.35,
+        bellVolume:0.55,
+        timer:{
+          selectedMinutes:DEFAULT_PRESET_MINUTES,
+          durationMs:DEFAULT_PRESET_MINUTES * 60 * 1000,
+          remainingMs:DEFAULT_PRESET_MINUTES * 60 * 1000,
+          running:false,
+          endsAt:0,
+          ringing:false,
+          label:`${DEFAULT_PRESET_MINUTES}分タイマー`
+        }
+      };
+    }
+
+    function loadAppState(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        const base = defaultAppState();
+        const timer = { ...base.timer, ...(parsed.timer || {}) };
+        const merged = {
+          ...base,
+          ...parsed,
+          managerName: (parsed.managerName || base.managerName).slice(0,12),
+          bgmEnabled: parsed.bgmEnabled !== false,
+          bgmVolume: clampNumber(parsed.bgmVolume ?? base.bgmVolume, 0, 1),
+          bellVolume: clampNumber(parsed.bellVolume ?? base.bellVolume, 0, 1),
+          timer
+        };
+        if(!timer.durationMs || timer.durationMs < 1000){
+          const fallbackMinutes = merged.timer.selectedMinutes || DEFAULT_PRESET_MINUTES;
+          merged.timer.durationMs = fallbackMinutes * 60 * 1000;
+        }
+        if(!timer.remainingMs || timer.remainingMs < 0){
+          merged.timer.remainingMs = merged.timer.durationMs;
+        }
+        return merged;
+      }catch{
+        return defaultAppState();
+      }
+    }
+
+    function saveAppState(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+    }
+
+    function bindUI(){
+      els.managerNameInput.addEventListener('input', ()=>{
+        appState.managerName = (els.managerNameInput.value || '店長').slice(0, 12);
+        saveAppState();
+        updateAll();
+      });
+
+      els.installHintBtn.addEventListener('click', ()=>{
+        const standalone = isStandalone();
+        els.installHintText.textContent = standalone
+          ? 'ホーム画面アプリとして開かれています。SafariのUIが出ない、店長専用の全画面モードです。'
+          : 'Safariでこのページを開き、「共有」→「ホーム画面に追加」を選ぶと、1タップで起動できるWebアプリになります。';
+      });
+
+      els.sceneStage.addEventListener('click', event=>{
+        unlockAudioFromGesture();
+        const rect = els.sceneStage.getBoundingClientRect();
+        const x = clamp(((event.clientX - rect.left) / rect.width) * 100, 14, 86);
+        const y = clamp(((event.clientY - rect.top) / rect.height) * 100, 50, 82);
+        const walker = event.target.closest('.scene-walker');
+        pulseTarget(x, y);
+        if(walker){
+          const actor = HEDGEHOGS.find(h => h.id === walker.dataset.id);
+          if(actor){
+            sendOne(actor, x, y);
+            return;
+          }
+        }
+        gatherAll(x, y);
+      });
+
+      document.addEventListener('pointerdown', unlockAudioFromGesture, { passive:true });
+      document.addEventListener('keydown', unlockAudioFromGesture, { passive:true });
+
+      els.presetGrid.querySelectorAll('[data-minutes]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          selectPreset(Number(btn.dataset.minutes || DEFAULT_PRESET_MINUTES), true);
+        });
+      });
+
+      els.applyCustomBtn.addEventListener('click', ()=>{
+        const customMs = parseCustomDurationInput(els.customMinutesInput.value);
+        if(!customMs){
+          return;
+        }
+        setCustomDuration(customMs);
+      });
+
+      els.loadAudioBtn.addEventListener('click', ()=>{
+        unlockAudioFromGesture();
+        els.audioFilesInput.click();
+      });
+      els.testBellBtn.addEventListener('click', async ()=>{
+        await testBellOnce();
+      });
+      els.stopTestBellBtn.addEventListener('click', async ()=>{
+        await stopBellTest();
+      });
+      els.clearAudioBtn.addEventListener('click', ()=>{
+        clearManualAudioFiles();
+      });
+      els.audioFilesInput.addEventListener('change', async ()=>{
+        await handleManualAudioFiles(els.audioFilesInput.files);
+      });
+
+      els.timerStartBtn.addEventListener('click', ()=>{
+        unlockAudioFromGesture();
+        startTimer();
+      });
+      els.timerPauseBtn.addEventListener('click', ()=> pauseOrResumeTimer());
+      els.timerResetBtn.addEventListener('click', ()=> resetTimer());
+      els.timerStopAlarmBtn.addEventListener('click', async ()=> await stopTimerAlarm());
+
+      els.bgmToggleBtn.addEventListener('click', async ()=>{
+        unlockAudioFromGesture();
+        appState.bgmEnabled = !appState.bgmEnabled;
+        saveAppState();
+        if(appState.bgmEnabled){
+          await syncBgm(true);
+        }else{
+          stopAllBgm(true);
+        }
+        renderBgmUI();
+      });
+
+      els.bgmVolumeRange.addEventListener('input', ()=>{
+        appState.bgmVolume = clampNumber(Number(els.bgmVolumeRange.value) / 100, 0, 1);
+        saveAppState();
+        applyBgmVolumes();
+        renderBgmUI();
+      });
+      els.bellVolumeRange.addEventListener('input', ()=>{
+        appState.bellVolume = clampNumber(Number(els.bellVolumeRange.value) / 100, 0, 1);
+        bellAudio.volume = appState.bellVolume;
+        saveAppState();
+        renderBgmUI();
+      });
+
+      window.addEventListener('resize', ()=>{
+        updateCritterPositions();
+        maybeResumeBgmAfterVisibility();
+      });
+      document.addEventListener('visibilitychange', ()=>{
+        if(document.hidden){
+          handleAppHidden();
+        }else{
+          updateAll();
+          maybeResumeBgmAfterVisibility(true);
+        }
+      });
+      window.addEventListener('pagehide', handleAppHidden);
+      window.addEventListener('focus', ()=>{
+        maybeResumeBgmAfterVisibility(true);
+      });
+      window.addEventListener('orientationchange', ()=>{
+        setTimeout(()=>{
+          updateCritterPositions();
+          maybeResumeBgmAfterVisibility(true);
+        }, 140);
+      });
+      window.addEventListener('pageshow', ()=>{
+        updateAll();
+        maybeResumeBgmAfterVisibility(true);
+      });
+    }
+
+    function handleAppHidden(){
+      bgmResumeAfterVisibility = appState.bgmEnabled && audioUnlocked && !appState.timer.ringing && (bgmPlayers.some(player => !player.paused) || !!currentBgmTrack);
+      stopAllBgm();
+      bellTestResumeBgm = false;
+      bgmResumeAfterBell = false;
+      stopBellPlayback();
+      renderBgmUI();
+    }
+
+    async function maybeResumeBgmAfterVisibility(force=false){
+      if(!bgmResumeAfterVisibility) return;
+      if(document.hidden || !appState.bgmEnabled || appState.timer.ringing || !audioUnlocked) return;
+      bgmResumeAfterVisibility = false;
+      currentBgmTrack = '';
+      await syncBgm(true);
+      if(force){
+        renderBgmUI();
+      }
+    }
+
+    function selectPreset(minutes, clearCustom){
+      const safeMinutes = clamp(Math.round(minutes || DEFAULT_PRESET_MINUTES), 1, 240);
+      appState.timer.selectedMinutes = safeMinutes;
+      appState.timer.durationMs = safeMinutes * 60 * 1000;
+      if(!appState.timer.running && !appState.timer.ringing){
+        appState.timer.remainingMs = appState.timer.durationMs;
+      }
+      appState.timer.label = `${safeMinutes}分タイマー`;
+      if(clearCustom){
+        els.customMinutesInput.value = '';
+      }else{
+        els.customMinutesInput.value = `${safeMinutes}`;
+      }
+      saveAppState();
+      renderTimer();
+    }
+
+    function formatDurationLabel(ms){
+      const totalSeconds = Math.max(1, Math.round(ms / 1000));
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      const parts = [];
+      if(hours) parts.push(`${hours}時間`);
+      if(minutes) parts.push(`${minutes}分`);
+      if(seconds) parts.push(`${seconds}秒`);
+      return parts.join('') || '0秒';
+    }
+
+    function formatDurationInput(ms){
+      const totalSeconds = Math.max(0, Math.round(ms / 1000));
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      if(!totalSeconds) return '';
+      if(seconds === 0) return `${minutes}`;
+      return `${minutes}:${String(seconds).padStart(2,'0')}`;
+    }
+
+    function parseCustomDurationInput(raw){
+      const text = String(raw || '').trim();
+      if(!text) return 0;
+      let totalSeconds = 0;
+      if(/^\d{1,2}:\d{1,2}(?::\d{1,2})?$/.test(text)){
+        const parts = text.split(':').map(n => Number(n));
+        if(parts.length === 2){
+          totalSeconds = parts[0] * 60 + parts[1];
+        }else{
+          totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+        }
+      }else if(/[分秒時]/.test(text)){
+        const hourMatch = text.match(/(\d+)\s*時間?/);
+        const minMatch = text.match(/(\d+)\s*分/);
+        const secMatch = text.match(/(\d+)\s*秒/);
+        totalSeconds = (hourMatch ? Number(hourMatch[1]) * 3600 : 0) + (minMatch ? Number(minMatch[1]) * 60 : 0) + (secMatch ? Number(secMatch[1]) : 0);
+      }else if(/^\d+$/.test(text)){
+        totalSeconds = Number(text) * 60;
+      }
+      totalSeconds = clampNumber(totalSeconds, 1, 24 * 3600);
+      return totalSeconds ? totalSeconds * 1000 : 0;
+    }
+
+    function setCustomDuration(durationMs, shouldSave = true){
+      const safeMs = clampNumber(Math.round(durationMs), 1000, 24 * 3600 * 1000);
+      appState.timer.selectedMinutes = 0;
+      appState.timer.durationMs = safeMs;
+      if(!appState.timer.running && !appState.timer.ringing){
+        appState.timer.remainingMs = safeMs;
+      }
+      appState.timer.label = `${formatDurationLabel(safeMs)}タイマー`;
+      els.customMinutesInput.value = formatDurationInput(safeMs);
+      if(shouldSave){
+        saveAppState();
+        renderTimer();
+      }
+    }
+
+    function getTimerRemainingMs(){
+      const timer = appState.timer;
+      if(timer.running && timer.endsAt){
+        return Math.max(0, timer.endsAt - Date.now());
+      }
+      return Math.max(0, timer.remainingMs || 0);
+    }
+
+    function startTimer(){
+      const timer = appState.timer;
+      stopTimerAlarm(true);
+      const customMs = parseCustomDurationInput(els.customMinutesInput.value);
+      if(customMs){
+        setCustomDuration(customMs, false);
+      }
+      const remaining = (!timer.running && timer.remainingMs > 0 && timer.remainingMs !== timer.durationMs) ? timer.remainingMs : timer.durationMs;
+      timer.running = true;
+      timer.ringing = false;
+      timer.endsAt = Date.now() + remaining;
+      timer.remainingMs = remaining;
+      timerFinishedHandled = false;
+      clearTimerVisuals();
+      saveAppState();
+      renderTimer();
+    }
+
+    function pauseOrResumeTimer(){
+      const timer = appState.timer;
+      if(timer.ringing){
+        stopTimerAlarm();
+        return;
+      }
+      if(timer.running){
+        timer.remainingMs = getTimerRemainingMs();
+        timer.running = false;
+        timer.endsAt = 0;
+      }else if(timer.remainingMs > 0){
+        timer.running = true;
+        timer.endsAt = Date.now() + timer.remainingMs;
+      }
+      saveAppState();
+      renderTimer();
+    }
+
+    function resetTimer(){
+      const timer = appState.timer;
+      timer.running = false;
+      timer.ringing = false;
+      timer.endsAt = 0;
+      timer.remainingMs = timer.durationMs || (timer.selectedMinutes * 60 * 1000);
+      timerFinishedHandled = false;
+      stopTimerAlarm(true);
+      clearTimerVisuals();
+      saveAppState();
+      renderTimer();
+      renderSceneBubble(new Date(), getSceneSegment(new Date().getHours()));
+    }
+
+    function renderTimer(){
+      const timer = appState.timer;
+      const remainingMs = getTimerRemainingMs();
+      if(timer.running && remainingMs <= 0 && !timer.ringing){
+        finishTimer();
+        return;
+      }
+      const DISPLAY_SHIFT_MS = 420;
+      const totalSeconds = timer.running
+        ? Math.max(0, Math.ceil(Math.max(0, remainingMs - DISPLAY_SHIFT_MS) / 1000))
+        : Math.max(0, Math.ceil(remainingMs / 1000));
+      els.timerDisplay.textContent = formatClockTimer(totalSeconds);
+      const stateLabel = timer.ringing ? '終了' : timer.running ? '進行中' : (remainingMs !== timer.durationMs && remainingMs > 0 ? '一時停止' : '未開始');
+      els.timerStatus.textContent = stateLabel;
+      els.timerStatus.classList.toggle('ringing', timer.ringing);
+      if(timer.ringing){
+        els.timerInfoText.textContent = 'おつかれさまです。停止ボタンで終了音を止められます。';
+      }else if(timer.running){
+        const finishAt = new Date(Date.now() + remainingMs);
+        els.timerInfoText.textContent = `${timer.label} が進行中です。終了予定 ${String(finishAt.getHours()).padStart(2,'0')}:${String(finishAt.getMinutes()).padStart(2,'0')}`;
+      }else if(remainingMs !== timer.durationMs && remainingMs > 0){
+        els.timerInfoText.textContent = `${timer.label} を一時停止中です。再開できます。`;
+      }else{
+        els.timerInfoText.textContent = `${timer.label} を準備中です。`;
+      }
+      els.timerPauseBtn.textContent = timer.running ? '一時停止' : '再開';
+      els.timerStopAlarmBtn.style.display = timer.ringing ? 'inline-block' : 'none';
+      const swapStopAndReset = window.matchMedia('(orientation: landscape)').matches && timer.ringing;
+      els.timerStopAlarmBtn.style.order = swapStopAndReset ? '3' : '4';
+      els.timerResetBtn.style.order = swapStopAndReset ? '4' : '3';
+      els.timerBanner.classList.toggle('show', timer.ringing);
+      els.presetGrid.querySelectorAll('[data-minutes]').forEach(btn=>{
+        btn.classList.toggle('active', Number(btn.dataset.minutes) === Number(timer.selectedMinutes));
+      });
+    }
+
+    function clearTimerVisuals(){
+      els.timerBanner.classList.remove('show');
+      sceneBubbleOverrideText = '';
+      sceneBubbleOverrideUntil = 0;
+      HEDGEHOGS.forEach(h=>{
+        if(h.tapSpeech && h.tapSpeech.startsWith('おつかれさま')){
+          h.tapSpeech = '';
+          h.tapSpeechUntil = 0;
+        }
+      });
+    }
+
+    async function finishTimer(){
+      const timer = appState.timer;
+      if(timerFinishedHandled) return;
+      timerFinishedHandled = true;
+      timer.running = false;
+      timer.ringing = true;
+      timer.remainingMs = 0;
+      timer.endsAt = 0;
+      const timerX = 50;
+      const timerY = 66;
+      HEDGEHOGS.forEach((h, index)=>{
+        const gatherX = [-27, -9, 9, 27][index] ?? ((index - ((HEDGEHOGS.length - 1) / 2)) * 18);
+        const gatherY = [5, 0, 0, 5][index] ?? 4;
+        const offsetX = gatherX;
+        const offsetY = gatherY;
+        h.tx = clamp(timerX + offsetX, 14, 86);
+        h.ty = clamp(timerY + offsetY, 50, 82);
+        h.holdUntil = performance.now() + 11000;
+        h.wanderAt = h.holdUntil + 1500 + Math.random() * 1200;
+      });
+      sceneBubbleOverrideText = `「おつかれさま、${appState.managerName}さん！」と、ハリネズミたちが集まってお知らせしています。`;
+      sceneBubbleOverrideUntil = Date.now() + 3600 * 1000;
+      pulseTarget(timerX, timerY);
+      updateCritterPositions();
+      await startBellLoop();
+      saveAppState();
+      renderTimer();
+      renderSceneBubble(new Date(), getSceneSegment(new Date().getHours()));
+    }
+
+    async function startBellLoop(){
+      await unlockAudioFromGesture();
+      stopBellPlayback();
+      bellMode = 'timer';
+      bgmResumeAfterBell = appState.bgmEnabled && (!!currentBgmTrack || bgmPlayers.some(player => !player.paused));
+      if(bgmResumeAfterBell){
+        stopAllBgm();
+      }
+      const started = await playBellPass('timer');
+      if(!started){
+        bellMode = 'idle';
+        els.bgmStatusText.textContent = manualAudioLoaded ? 'timer-bell.mp3 が読み込まれていません。' : '終了音を再生できません。まず音源を読み込んでください。';
+        if(bgmResumeAfterBell && appState.bgmEnabled && audioUnlocked && !document.hidden){
+          syncBgm(true);
+        }
+        bgmResumeAfterBell = false;
+        renderBgmUI();
+        return false;
+      }
+      renderBgmUI();
+      return true;
+    }
+
+    async function testBellOnce(){
+      await unlockAudioFromGesture();
+      const wasRinging = appState.timer.ringing;
+      const hadBgm = appState.bgmEnabled && bgmPlayers.some(player => !player.paused);
+      stopBellPlayback();
+      bellTestResumeBgm = hadBgm && !wasRinging;
+      bellMode = 'test';
+      if(bellTestResumeBgm){
+        stopAllBgm();
+      }
+      const started = await playBellPass('test');
+      if(!started){
+        const shouldResume = bellTestResumeBgm;
+        bellMode = 'idle';
+        bellTestResumeBgm = false;
+        els.bgmStatusText.textContent = manualAudioLoaded ? 'timer-bell.mp3 が読み込まれていません。' : '終了音を再生できません。まず音源を読み込んでください。';
+        if(shouldResume && !appState.timer.ringing && appState.bgmEnabled && audioUnlocked && !document.hidden){
+          syncBgm(true);
+        }
+        renderBgmUI();
+        return false;
+      }
+      els.bgmStatusText.textContent = '終了音テストを再生しています。';
+      renderBgmUI();
+      return true;
+    }
+
+    async function stopBellTest(){
+      if(bellMode !== 'test') return;
+      stopBellPlayback();
+      const shouldResume = bellTestResumeBgm;
+      bellTestResumeBgm = false;
+      els.bgmStatusText.textContent = '終了音テストを止めました。';
+      if(shouldResume && !appState.timer.ringing && appState.bgmEnabled && audioUnlocked && !document.hidden){
+        currentBgmTrack = '';
+        await syncBgm(true);
+      }
+      renderBgmUI();
+    }
+
+    async function stopTimerAlarm(silentOnly=false){
+      const previousMode = stopBellPlayback();
+      if(!silentOnly){
+        appState.timer.ringing = false;
+        timerFinishedHandled = false;
+        clearTimerVisuals();
+        saveAppState();
+        renderTimer();
+      }
+      if(previousMode === 'test'){
+        const shouldResumeTest = bellTestResumeBgm;
+        bellTestResumeBgm = false;
+        if(shouldResumeTest && !appState.timer.ringing && appState.bgmEnabled && audioUnlocked && !document.hidden){
+          currentBgmTrack = '';
+          await syncBgm(true);
+        }
+      }
+      const shouldResumeBgm = bgmResumeAfterBell;
+      bgmResumeAfterBell = false;
+      if(!silentOnly && shouldResumeBgm && appState.bgmEnabled && audioUnlocked && !document.hidden){
+        currentBgmTrack = '';
+        await syncBgm(true);
+      }
+      renderBgmUI();
+    }
+
+    function updateAll(){
+      const now = new Date();
+      const segment = getSceneSegment(now.getHours());
+      applyScene(segment);
+      renderClock(now, segment);
+      renderComments(now, segment);
+      renderSceneBubble(now, segment);
+      renderPwaState();
+      renderTimer();
+      renderBgmUI();
+      syncBgm();
+    }
+
+    function renderClock(now, segment){
+      const hh = String(now.getHours()).padStart(2,'0');
+      const mm = String(now.getMinutes()).padStart(2,'0');
+      const ss = String(now.getSeconds()).padStart(2,'0');
+      els.clockText.textContent = `${hh}:${mm}`;
+      els.secondsText.textContent = ss;
+      els.dateText.textContent = `${now.getMonth()+1}月${now.getDate()}日（${WEEKDAYS[now.getDay()]}）`;
+      els.yearText.textContent = `${now.getFullYear()}年`;
+      els.greetingText.textContent = `${appState.managerName}さん、${segment.greeting.replace('店長さん、','')}`;
+      const currentQuarter = Math.floor(now.getMinutes() / 15);
+      const nextQuarterMinute = (currentQuarter + 1) * 15;
+      const nextQuarter = new Date(now);
+      if(nextQuarterMinute >= 60){
+        nextQuarter.setHours(nextQuarter.getHours() + 1, 0, 0, 0);
+      }else{
+        nextQuarter.setMinutes(nextQuarterMinute, 0, 0);
+      }
+      const safeRemain = Math.max(1, Math.floor((nextQuarter - now) / 1000));
+      els.nextChangeChip.textContent = `次の15分更新まで ${formatCountdown(safeRemain)}`;
+    }
+
+    function renderComments(now, segment){
+      const quarter = Math.floor(now.getMinutes() / 15);
+      const quarterStart = quarter * 15;
+      const quarterEnd = quarterStart + 14;
+      const seed = hashString(`${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}-${segment.key}`);
+      const dailySeed = hashString(`${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`);
+      const hourLine = pick(segment.hourLines, seed + quarter);
+      const quarterLine = pick(QUARTER_LINES[quarter], seed + now.getHours());
+      const dailyLine = DAILY_LINES[dailySeed % DAILY_LINES.length];
+
+      els.sceneSlotLabel.textContent = segment.label;
+      els.hourComment.textContent = hourLine;
+      els.quarterLabel.textContent = `${String(quarterStart).padStart(2,'0')}〜${String(quarterEnd).padStart(2,'0')}分`;
+      els.quarterComment.textContent = quarterLine;
+      els.dailyLabel.textContent = `${now.getMonth()+1}/${now.getDate()}`;
+      els.dailyComment.textContent = dailyLine;
+      els.sceneSummary.textContent = segment.summary;
+
+      HEDGEHOGS[0].baseSpeech = hourLine;
+      HEDGEHOGS[1].baseSpeech = quarterLine;
+      HEDGEHOGS[2].baseSpeech = dailyLine;
+      if(HEDGEHOGS[3]){
+        HEDGEHOGS[3].baseSpeech = getOkogemaruLine(now, segment, quarter);
+      }
+      updateCritterPositions();
+    }
+
+    function renderSceneBubble(now, segment){
+      if(appState.timer.ringing){
+        els.sceneBubble.textContent = `「おつかれさま、${appState.managerName}さん！」と、店員たちが集まってお知らせしています。`;
+        return;
+      }
+      if(sceneBubbleOverrideText && Date.now() < sceneBubbleOverrideUntil){
+        els.sceneBubble.textContent = sceneBubbleOverrideText;
+        return;
+      }
+      sceneBubbleOverrideText = '';
+      sceneBubbleOverrideUntil = 0;
+      const quarter = Math.floor(now.getMinutes()/15);
+      const actor = HEDGEHOGS[quarter % HEDGEHOGS.length] || HEDGEHOGS[0];
+      const activeTapSpeech = (actor.tapSpeech && Date.now() < (actor.tapSpeechUntil || 0)) ? actor.tapSpeech : '';
+      const rawSpeech = activeTapSpeech || actor.baseSpeech || '今日もゆっくり過ごしましょう。';
+      let speech = trimQuote(rawSpeech).trim();
+      if(!speech || speech === 'undefined' || speech === 'null'){
+        speech = '今日もゆっくり過ごしましょう。';
+      }
+      const lines = [
+        `${appState.managerName}さん、いまは「${segment.label}」の景色です。`,
+        `${actor.name}が「${speech}」と話しています。`
+      ];
+      els.sceneBubble.textContent = lines.join(' ');
+    }
+
+    function renderPwaState(){
+      els.pwaStateChip.textContent = isStandalone() ? 'ホーム画面アプリ表示' : 'ブラウザ表示';
+    }
+
+    function renderBgmUI(){
+      els.bgmVolumeLabel.textContent = `${Math.round(appState.bgmVolume * 100)}%`;
+      els.bellVolumeLabel.textContent = `${Math.round(appState.bellVolume * 100)}%`;
+      els.bgmToggleBtn.textContent = appState.bgmEnabled ? 'BGM ON' : 'BGM OFF';
+      els.bgmToggleBtn.className = `toggle-btn ${appState.bgmEnabled ? 'primary' : 'muted'}`;
+      const hour = new Date().getHours();
+      const track = formatBgmTrack(hour);
+      els.bgmTrackText.textContent = currentBgmTrack || track;
+      els.stopTestBellBtn.style.display = bellMode === 'test' ? 'inline-block' : 'none';
+      let statusText = '最初のタップで、その時間帯のBGMを流します。';
+      const noAudioLoaded = !manualAudioLoaded && !audioBasePath;
+      if(bellMode === 'test'){
+        statusText = '終了音テストを再生中です。すぐ下の「テスト終了」で止められます。';
+      }else if(appState.timer.ringing){
+        statusText = 'タイマー終了音を再生中です。左の停止ボタンで止められます。';
+      }else if(noAudioLoaded){
+        statusText = '音源がまだ読み込まれていません。まず「音源を読み込む」を押してください。';
+      }else if(!appState.bgmEnabled){
+        statusText = 'BGMはオフです。ボタンで再開できます。';
+      }else if(!audioUnlocked){
+        statusText = '最初のタップで、その時間帯のBGMを流します。';
+      }else if(manualAudioLoaded){
+        statusText = `読み込んだ音源を使っています。次は ${String((hour + 1) % 24).padStart(2,'0')}:00 に切り替わります。`;
+      }else if(currentBgmTrack || audioBasePath){
+        statusText = `現在時刻の曲を1時間ごとに切り替えます。次は ${String((hour + 1) % 24).padStart(2,'0')}:00 です。`;
+      }else{
+        statusText = 'BGMの準備中です。';
+      }
+      els.bgmStatusText.textContent = statusText;
+    }
+
+    function applyScene(segment){
+      const c = segment.colors;
+      const root = document.documentElement.style;
+      root.setProperty('--sky-top', c.skyTop);
+      root.setProperty('--sky-mid', c.skyMid);
+      root.setProperty('--sky-bottom', c.skyBottom);
+      root.setProperty('--ground', c.ground);
+      root.setProperty('--floor', c.floor);
+      root.setProperty('--window-glow', c.windowGlow);
+      root.setProperty('--star-opacity', c.starOpacity);
+      root.setProperty('--sun-opacity', c.sunOpacity);
+      root.setProperty('--moon-opacity', c.moonOpacity);
+      root.setProperty('--lamp-opacity', c.lampOpacity);
+    }
+
+    function getSceneSegment(hour){
+      return SCENE_SEGMENTS.find(seg => hour >= seg.start && hour < seg.end) || SCENE_SEGMENTS[0];
+    }
+
+    function renderCritters(){
+      els.sceneCritters.innerHTML = HEDGEHOGS.map(h => `
+        <button class="scene-walker" type="button" data-id="${h.id}" aria-label="${h.name}">
+          <span class="scene-shadow"></span>
+          <span class="scene-svg">${critterSVG(h.kind, h.visor)}</span>
+          <span class="speech">${escapeHTML(h.speech)}</span>
+          <span class="name-tag">${escapeHTML(h.name)}</span>
+        </button>
+      `).join('');
+      updateCritterPositions();
+    }
+
+    function updateCritterPositions(){
+      const stageHeight = els.sceneStage?.clientHeight || 0;
+      HEDGEHOGS.forEach(h => {
+        const node = els.sceneCritters.querySelector(`[data-id="${h.id}"]`);
+        if(!node) return;
+        node.style.left = `${h.x}%`;
+        node.style.top = `${h.y}%`;
+        node.classList.toggle('walking', distance(h.x, h.y, h.tx, h.ty) > 0.8);
+        const speech = node.querySelector('.speech');
+        if(speech){
+          const speechText = getActorSpeech(h);
+          if(!speechText){
+            speech.textContent = '';
+            speech.classList.remove('show','inside','side');
+            speech.style.left = '50%';
+            speech.style.right = 'auto';
+            speech.style.top = '-6px';
+            speech.style.display = 'none';
+          }else{
+            speech.textContent = speechText;
+            speech.style.display = 'block';
+            speech.classList.add('show');
+            speech.classList.remove('inside','side');
+            speech.style.left = '50%';
+            speech.style.right = 'auto';
+            speech.style.top = '-6px';
+            const walkerHeight = node.offsetHeight || 0;
+            const speechHeight = speech.offsetHeight || 0;
+            const walkerTop = stageHeight ? (stageHeight * (h.y / 100)) - walkerHeight : 999;
+            const speechWidth = speech.offsetWidth || 0;
+            const walkerLeft = els.sceneStage ? (els.sceneStage.clientWidth * (h.x / 100)) : 0;
+            const tooHigh = walkerTop < speechHeight + 18;
+            if(tooHigh){
+              speech.classList.add('inside');
+              speech.style.top = '6px';
+            }
+            if(walkerLeft < speechWidth * 0.55){
+              speech.classList.remove('inside');
+              speech.classList.add('side');
+              speech.style.left = '72%';
+              speech.style.top = '18px';
+            }else if(els.sceneStage && walkerLeft > els.sceneStage.clientWidth - speechWidth * 0.55){
+              speech.classList.remove('inside');
+              speech.classList.add('side');
+              speech.style.left = 'auto';
+              speech.style.right = '72%';
+              speech.style.top = '18px';
+            }
+          }
+        }
+      });
+    }
+
+    function startAnimation(){
+      let last = performance.now();
+      const loop = now => {
+        const dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        stepActors(now, dt);
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    }
+
+    function stepActors(now, dt){
+      let moved = false;
+      HEDGEHOGS.forEach((h, index) => {
+        if((!h.holdUntil || now > h.holdUntil) && now > (h.wanderAt || 0)){
+          setRandomTarget(h, index, now);
+        }
+        const dx = h.tx - h.x;
+        const dy = h.ty - h.y;
+        const dist = Math.hypot(dx, dy);
+        if(dist > 0.06){
+          const responsiveness = Math.max(4.8, (h.speed || 11) * 0.62);
+          const moveRatio = Math.min(0.42, 1 - Math.exp(-dt * responsiveness));
+          h.x = clamp(h.x + dx * moveRatio, 14, 86);
+          h.y = clamp(h.y + dy * moveRatio, 50, 82);
+          moved = true;
+        }else if(h.holdUntil && now > h.holdUntil){
+          h.holdUntil = 0;
+          h.wanderAt = now + 600 + Math.random() * 1500;
+        }
+      });
+      if(moved){
+        separateActors(now);
+        updateCritterPositions();
+      }
+    }
+
+    function separateActors(now = performance.now()){
+      for(let i = 0; i < HEDGEHOGS.length; i++){
+        for(let j = i + 1; j < HEDGEHOGS.length; j++){
+          const a = HEDGEHOGS[i];
+          const b = HEDGEHOGS[j];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const dist = Math.hypot(dx, dy) || 0.01;
+          const isHolding = Boolean((a.holdUntil && now < a.holdUntil) || (b.holdUntil && now < b.holdUntil));
+          const minGap = isHolding ? 11.2 : 13.2;
+          if(dist < minGap){
+            const push = (minGap - dist) / 2;
+            const ux = dx / dist;
+            const uy = dy / dist;
+            const pushScale = isHolding ? 0.48 : 0.82;
+            const aMinX = isHolding ? 14 : (a.laneMin || 14);
+            const aMaxX = isHolding ? 86 : (a.laneMax || 86);
+            const bMinX = isHolding ? 14 : (b.laneMin || 14);
+            const bMaxX = isHolding ? 86 : (b.laneMax || 86);
+            a.x = clamp(a.x - ux * push * pushScale, aMinX, aMaxX);
+            b.x = clamp(b.x + ux * push * pushScale, bMinX, bMaxX);
+            a.y = clamp(a.y - uy * push * 0.22, 50, 82);
+            b.y = clamp(b.y + uy * push * 0.22, 50, 82);
+          }
+        }
+      }
+    }
+
+    function setRandomTarget(h, index, now){
+      const laneMin = h.laneMin ?? 14;
+      const laneMax = h.laneMax ?? 86;
+      h.tx = clamp(laneMin + Math.random() * Math.max(4, laneMax - laneMin), laneMin, laneMax);
+      h.ty = clamp(58 + Math.random() * 20 + (index === 1 ? -3 : 3), 52, 82);
+      h.wanderAt = now + 1800 + Math.random() * 2400;
+    }
+
+    function gatherAll(x, y){
+      HEDGEHOGS.forEach((h, index) => {
+        const gatherX = [-28, -10, 10, 28][index] ?? ((index - ((HEDGEHOGS.length - 1) / 2)) * 18);
+        const gatherY = [6, 1, 1, 6][index] ?? 4;
+        const offsetX = gatherX;
+        const offsetY = gatherY;
+        h.tx = clamp(x + offsetX, 14, 86);
+        h.ty = clamp(y + offsetY, 50, 82);
+        h.holdUntil = performance.now() + 7000;
+        h.wanderAt = h.holdUntil + 1200 + Math.random() * 1200;
+        h.tapSpeech = getGatherSpeech(h, index);
+        h.tapSpeechUntil = Date.now() + 9000;
+      });
+      sceneBubbleOverrideText = `「はーい、${appState.managerName}さん！」と、店員たちがとことこ集まってきました。`;
+      sceneBubbleOverrideUntil = Date.now() + 9000;
+      els.sceneBubble.textContent = sceneBubbleOverrideText;
+      updateCritterPositions();
+    }
+
+    function sendOne(h, x, y){
+      h.tx = clamp(x, 14, 86);
+      h.ty = clamp(y, 50, 82);
+      h.holdUntil = performance.now() + 7200;
+      h.wanderAt = h.holdUntil + 1200 + Math.random() * 1200;
+      h.tapSpeech = getSingleTapSpeech(h);
+      h.tapSpeechUntil = Date.now() + 9000;
+      sceneBubbleOverrideText = `「${trimQuote(h.tapSpeech)}」と${h.name}がてちてち寄ってきました。`;
+      sceneBubbleOverrideUntil = Date.now() + 9000;
+      els.sceneBubble.textContent = sceneBubbleOverrideText;
+      updateCritterPositions();
+    }
+
+    function getOkogemaruLine(now, segment, quarter){
+      const linesBySegment = {
+        dawn:[
+          '「あさの ぽかぽか、まだ ちいさいの。もうすこし ぬくぬく したいじょ」',
+          '「おこげ丸、あったかい のみものの におい すきなの」'
+        ],
+        morning:[
+          '「あさごはんの におい、もう するの？ おなか すいたじょ」',
+          '「さむくない あさは うれしいの。てちてち がんばるじょ」'
+        ],
+        noon:[
+          '「おひるは ぽかぽか なの。おこげ丸、ちから でるじょ」',
+          '「おやつの はなし なら わかるの。むずかしい のは ぽわぽわ なの」'
+        ],
+        afternoon:[
+          '「おやつじかん まだかなぁ。おこげ丸、まってるじょ」',
+          '「さむく ないなら しあわせ なの。ふかふか イスも すきだよぉ」'
+        ],
+        evening:[
+          '「ゆうがたは ちょびっと ひえるの。あったかいの ほしいじょ」',
+          '「スープの におい したら、おこげ丸 もっと がんばるの」'
+        ],
+        night:[
+          '「よるは ぬくぬく だいじ なの。おこげ丸、あったかく してたいじょ」',
+          '「かずとか てつがくは むずかしいの。おやつの はなしが いいの」'
+        ]
+      };
+      const lines = linesBySegment[segment.key] || linesBySegment.morning;
+      return lines[(hashString(`${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}-${quarter}-okoge`) + quarter) % lines.length];
+    }
+
+    function getGatherSpeech(actor, index){
+      if(actor.kind === 'tenrec'){
+        const lines = [
+          '「おこげ丸も いくじょ！ てちてち まにあうの」',
+          '「さむく ないばしょ だと うれしいの。そこで まつじょ」'
+        ];
+        return lines[index % lines.length];
+      }
+      const lines = [
+        '店長さん、ただいま集合します！',
+        'てちてち急いで向かうよ。',
+        'その場所でしばらく待ってるね。'
+      ];
+      return lines[index % lines.length] || '向かうね！';
+    }
+
+    function getSingleTapSpeech(actor){
+      if(actor.kind === 'tenrec'){
+        const lines = [
+          `${appState.managerName}さん、おこげ丸 いくじょ！`,
+          `${appState.managerName}さん、ぬくぬくの ばしょ なら うれしいの！`,
+          `${appState.managerName}さん、おやつの はなし あるの？ おこげ丸 いくじょ！`
+        ];
+        return `「${pick(lines, Date.now())}」`;
+      }
+      return `「${appState.managerName}さん、${actor.name}が向かいます！」`;
+    }
+
+    function pulseTarget(x, y){
+      els.targetMark.style.left = `${x}%`;
+      els.targetMark.style.top = `${y}%`;
+      els.targetMark.classList.remove('show');
+      void els.targetMark.offsetWidth;
+      els.targetMark.classList.add('show');
+    }
+
+    function getActorSpeech(actor){
+      if(actor.tapSpeech && Date.now() < (actor.tapSpeechUntil || 0)){
+        return actor.tapSpeech;
+      }
+      actor.tapSpeech = '';
+      actor.tapSpeechUntil = 0;
+      return '';
+    }
+
+    async function ensureBellAudioContext(){
+      if(!bellAudioContext) return false;
+      if(bellAudioContext.state === 'suspended'){
+        try{ await bellAudioContext.resume(); }catch{}
+      }
+      return bellAudioContext.state !== 'closed';
+    }
+
+    async function decodeAudioDataSafe(arrayBuffer){
+      if(!bellAudioContext) return null;
+      await ensureBellAudioContext();
+      const workingBuffer = arrayBuffer.slice(0);
+      return await new Promise(resolve => {
+        const result = bellAudioContext.decodeAudioData(
+          workingBuffer,
+          decoded => resolve(decoded || null),
+          () => resolve(null)
+        );
+        if(result && typeof result.then === 'function'){
+          result.then(decoded => resolve(decoded || null)).catch(() => resolve(null));
+        }
+      });
+    }
+
+    function stopBellPlayback(){
+      const previousMode = bellMode;
+      bellMode = 'idle';
+      bellPauseGuard = true;
+      bellAudio.onended = null;
+      bellAudio.pause();
+      try{ bellAudio.currentTime = 0; }catch{}
+      bellAudio.loop = false;
+      bellAudio.muted = false;
+      setTimeout(()=>{ bellPauseGuard = false; }, 0);
+      renderBgmUI();
+      return previousMode;
+    }
+
+    async function playBellPass(mode='test'){
+      const src = await prepareAudioElement(bellAudio, 'timer-bell.mp3');
+      if(!src) return false;
+      bellPauseGuard = true;
+      bellAudio.pause();
+      try{ bellAudio.currentTime = 0; }catch{}
+      bellAudio.volume = appState.bellVolume;
+      bellAudio.muted = false;
+      bellAudio.loop = mode === 'timer';
+      bellAudio.onended = null;
+      setTimeout(()=>{ bellPauseGuard = false; }, 0);
+      if(mode === 'test'){
+        bellAudio.onended = ()=>{
+          bellPauseGuard = true;
+          bellAudio.onended = null;
+          const shouldResume = bellTestResumeBgm;
+          bellMode = 'idle';
+          bellTestResumeBgm = false;
+          setTimeout(()=>{ bellPauseGuard = false; }, 0);
+          if(shouldResume && !appState.timer.ringing && appState.bgmEnabled && audioUnlocked && !document.hidden){
+            syncBgm(true);
+          }
+          renderBgmUI();
+        };
+      }
+      try{
+        await bellAudio.play();
+        return true;
+      }catch{
+        bellAudio.onended = null;
+        bellAudio.loop = false;
+        bellPauseGuard = false;
+        return false;
+      }
+    }
+
+    async function unlockAudioFromGesture(){
+      const firstUnlock = !audioUnlocked;
+      audioUnlocked = true;
+      bellAudio.volume = appState.bellVolume;
+      await ensureBellAudioContext();
+      await primeBellAudio();
+      if(firstUnlock && appState.bgmEnabled && !appState.timer.ringing){
+        await syncBgm(true);
+      }
+      renderBgmUI();
+    }
+
+    function formatBgmTrack(hour){
+      return `bgm-${String(hour).padStart(2,'0')}.mp3`;
+    }
+
+    function audioFileKey(name){
+      return String(name || '').trim().toLowerCase();
+    }
+
+    function revokeManualAudioUrls(){
+      manualAudioUrls.forEach(url => {
+        try{ URL.revokeObjectURL(url); }catch{}
+      });
+      manualAudioUrls.clear();
+    }
+
+    async function primeBellAudio(){
+      const src = await prepareAudioElement(bellAudio, 'timer-bell.mp3');
+      if(!src) return false;
+      bellAudio.loop = false;
+      bellAudio.volume = appState.bellVolume;
+      bellAudio.muted = false;
+      try{ bellAudio.load(); }catch{}
+      return true;
+    }
+
+    async function handleManualAudioFiles(fileList){
+      if(!fileList || !fileList.length) return;
+      revokeManualAudioUrls();
+      bellBuffer = null;
+      Array.from(fileList).forEach(file => {
+        if(/\.mp3$/i.test(file.name)){
+          manualAudioUrls.set(audioFileKey(file.name), URL.createObjectURL(file));
+        }
+      });
+      const bellFile = Array.from(fileList).find(file => audioFileKey(file.name) === 'timer-bell.mp3');
+      bellBuffer = null;
+      if(bellFile && bellAudioContext){
+        try{
+          const bellArrayBuffer = await bellFile.arrayBuffer();
+          bellBuffer = await decodeAudioDataSafe(bellArrayBuffer);
+        }catch{
+          bellBuffer = null;
+        }
+      }
+      manualAudioLoaded = manualAudioUrls.size > 0;
+      if(manualAudioLoaded){
+        stopAllBgm(true);
+        stopBellPlayback();
+        await primeBellAudio();
+        if(appState.timer.ringing){
+          await startBellLoop();
+        }
+        if(appState.bgmEnabled && audioUnlocked && !appState.timer.ringing){
+          await syncBgm(true);
+        }
+      }
+      renderBgmUI();
+    }
+
+    function clearManualAudioFiles(){
+      revokeManualAudioUrls();
+      bellBuffer = null;
+      manualAudioLoaded = false;
+      els.audioFilesInput.value = '';
+      stopBellPlayback();
+      stopAllBgm(true);
+      if(appState.bgmEnabled && audioUnlocked){
+        syncBgm(true);
+      }
+      renderBgmUI();
+    }
+
+    async function waitAudioReady(src, timeoutMs = 1800){
+      return new Promise(resolve => {
+        const probe = new Audio();
+        let done = false;
+        const finish = ok => {
+          if(done) return;
+          done = true;
+          clearTimeout(timer);
+          try{ probe.pause(); }catch{}
+          probe.src = '';
+          resolve(ok);
+        };
+        const timer = setTimeout(() => finish(false), timeoutMs);
+        probe.preload = 'metadata';
+        probe.playsInline = true;
+        probe.addEventListener('loadedmetadata', () => finish(true), { once:true });
+        probe.addEventListener('canplay', () => finish(true), { once:true });
+        probe.addEventListener('error', () => finish(false), { once:true });
+        probe.src = src;
+        try{ probe.load(); }catch{}
+      });
+    }
+
+    async function resolveAudioSource(fileName){
+      const manual = manualAudioUrls.get(audioFileKey(fileName));
+      if(manual){
+        return manual;
+      }
+      for(const candidate of AUDIO_PATH_CANDIDATES){
+        const src = `${candidate}${fileName}`;
+        if(await waitAudioReady(src)){
+          audioBasePath = candidate;
+          return src;
+        }
+      }
+      return '';
+    }
+
+    async function prepareAudioElement(player, fileName){
+      const src = await resolveAudioSource(fileName);
+      if(!src) return '';
+      if(player.src !== src){
+        player.src = src;
+      }
+      player.preload = 'auto';
+      try{ player.load(); }catch{}
+      return src;
+    }
+
+    function applyBgmVolumes(){
+      const active = bgmPlayers[activeBgmIndex];
+      const inactive = bgmPlayers[1 - activeBgmIndex];
+      if(!active.paused){ active.volume = appState.bgmVolume; }
+      if(inactive.paused){ inactive.volume = 0; }
+      bellAudio.volume = appState.bellVolume;
+    }
+
+    async function syncBgm(force=false){
+      if(bgmSwitchLock) return;
+      if(document.hidden) return;
+      if(!audioUnlocked || !appState.bgmEnabled || appState.timer.ringing || bellMode === 'test'){
+        if(appState.timer.ringing || bellMode === 'test'){
+          stopAllBgm();
+        }
+        return;
+      }
+      const hour = new Date().getHours();
+      const desiredTrack = formatBgmTrack(hour);
+      if(!force && currentBgmTrack === desiredTrack) return;
+      bgmSwitchLock = true;
+      try{
+        const nextPlayerIndex = 1 - activeBgmIndex;
+        const nextPlayer = bgmPlayers[nextPlayerIndex];
+        const oldPlayer = bgmPlayers[activeBgmIndex];
+        const src = await prepareAudioElement(nextPlayer, desiredTrack);
+        if(!src){
+          currentBgmTrack = '';
+          els.bgmStatusText.textContent = manualAudioLoaded ? '読み込んだ音源が足りないようです。' : 'BGMを再生できません。音源を読み込むか、cafe_bgm を index.html と同じフォルダ内に置いてください。';
+          return;
+        }
+        nextPlayer.currentTime = 0;
+        nextPlayer.volume = 0;
+        try{
+          await nextPlayer.play();
+        }catch{
+          els.bgmStatusText.textContent = 'BGMは、画面をタップしたあとに再生できます。';
+          return;
+        }
+        await crossFade(oldPlayer, nextPlayer, appState.bgmVolume, 1000);
+        activeBgmIndex = nextPlayerIndex;
+        currentBgmTrack = desiredTrack;
+      }finally{
+        bgmSwitchLock = false;
+        renderBgmUI();
+      }
+    }
+
+    function crossFade(oldPlayer, nextPlayer, targetVolume, durationMs){
+      return new Promise(resolve=>{
+        const start = performance.now();
+        const initialOld = oldPlayer && !oldPlayer.paused ? oldPlayer.volume : 0;
+        const tick = now => {
+          const t = Math.min(1, (now - start) / durationMs);
+          if(oldPlayer && !oldPlayer.paused){
+            oldPlayer.volume = initialOld * (1 - t);
+          }
+          nextPlayer.volume = targetVolume * t;
+          if(t < 1){
+            requestAnimationFrame(tick);
+          }else{
+            if(oldPlayer && !oldPlayer.paused){
+              oldPlayer.pause();
+              try{ oldPlayer.currentTime = 0; }catch{}
+            }
+            nextPlayer.volume = targetVolume;
+            resolve();
+          }
+        };
+        requestAnimationFrame(tick);
+      });
+    }
+
+    function stopAllBgm(hard=false){
+      bgmPlayers.forEach(player=>{
+        player.pause();
+        if(hard){
+          try{ player.currentTime = 0; }catch{}
+        }
+        player.volume = 0;
+      });
+      if(hard){
+        currentBgmTrack = '';
+      }
+    }
+
+    function formatCountdown(total){
+      const m = Math.floor(total / 60);
+      const s = total % 60;
+      return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    function formatClockTimer(totalSeconds){
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      if(h > 0){
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      }
+      return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    function isStandalone(){
+      return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    }
+
+    function hashString(str){
+      let hash = 2166136261;
+      for(let i=0;i<str.length;i++){
+        hash ^= str.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return Math.abs(hash >>> 0);
+    }
+
+    function pick(arr, seed){
+      return arr[seed % arr.length];
+    }
+
+    function trimQuote(text){
+      return String(text).replace(/^「|」$/g, '');
+    }
+
+    function clamp(v, min, max){
+      return Math.max(min, Math.min(max, Number(v)));
+    }
+
+    function clampNumber(v, min, max){
+      return Math.max(min, Math.min(max, Number(v)));
+    }
+
+    function distance(x1, y1, x2, y2){
+      return Math.hypot(x2 - x1, y2 - y1);
+    }
+
+    function escapeHTML(str){
+      return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+    }
+
+    function critterSVG(kind, visor){
+      if(kind === 'tenrec'){
+        return `
+        <svg viewBox="0 0 180 180" width="100%" height="100%" aria-hidden="true">
+          <path d="M57 84 Q72 43 120 56 Q149 64 146 105 Q141 140 103 146 Q62 151 45 124 Q34 106 57 84Z" fill="#f0c67a"/>
+          <path d="M56 85 Q73 50 120 62 Q141 69 140 103 Q135 131 101 137 Q65 142 50 122 Q40 108 56 85Z" fill="#f4db9a"/>
+          <path d="M45 94 Q24 94 18 104 Q30 116 53 111Z" fill="#f0c67a"/>
+          <circle cx="60" cy="65" r="12" fill="#f4db9a"/>
+          <circle cx="129" cy="73" r="12" fill="#f4db9a"/>
+          <circle cx="60" cy="65" r="6" fill="#f6ebc5"/>
+          <circle cx="129" cy="73" r="6" fill="#f6ebc5"/>
+          <path d="M60 60 L73 44 L84 62" fill="#e9ad4f" opacity=".8"/>
+          <path d="M84 52 L98 38 L110 57" fill="#d59745" opacity=".8"/>
+          <path d="M110 58 L126 43 L138 63" fill="#e7af55" opacity=".8"/>
+          <path d="M48 101 Q73 87 88 91 Q108 95 127 109 Q118 132 88 134 Q56 136 48 101Z" fill="#fff5e4"/>
+          <ellipse cx="81" cy="99" rx="4" ry="5" fill="#47362e"/>
+          <ellipse cx="107" cy="101" rx="4" ry="5" fill="#47362e"/>
+          <path d="M94 108 q4 3 0 7 q-6 4 -12 0 q-4 -4 3 -7z" fill="#6b5243"/>
+          <path d="M77 118 Q89 126 100 119" stroke="#6b5243" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          <path d="M42 54 Q90 26 141 54 L138 64 Q95 44 46 66 Z" fill="${visor}"/>
+          <path d="M38 58 H148" stroke="#fff4dc" stroke-width="5" stroke-linecap="round" opacity=".7"/>
+          <path d="M58 132 Q54 150 63 160" stroke="#8b694e" stroke-width="7" stroke-linecap="round"/>
+          <path d="M111 132 Q115 151 106 160" stroke="#8b694e" stroke-width="7" stroke-linecap="round"/>
+          <path d="M49 114 Q37 119 31 130" stroke="#8b694e" stroke-width="7" stroke-linecap="round"/>
+          <path d="M126 119 Q137 123 143 134" stroke="#8b694e" stroke-width="7" stroke-linecap="round"/>
+        </svg>`;
+      }
+      return `
+      <svg viewBox="0 0 180 180" width="100%" height="100%" aria-hidden="true">
+        <path d="M43 88 Q54 44 90 38 Q126 34 143 63 Q159 90 145 122 Q132 152 88 150 Q54 149 40 120 Q31 101 43 88Z" fill="#9e6a43"/>
+        <path d="M50 93 Q60 59 90 54 Q119 50 133 74 Q144 93 134 119 Q124 142 89 142 Q60 141 49 118 Q42 103 50 93Z" fill="#d3a37a"/>
+        <path d="M36 94 Q21 96 18 106 Q27 114 44 111Z" fill="#d3a37a"/>
+        <circle cx="63" cy="63" r="11" fill="#d9ab85"/>
+        <circle cx="117" cy="59" r="11" fill="#d9ab85"/>
+        <circle cx="63" cy="63" r="5.5" fill="#f7e6cf"/>
+        <circle cx="117" cy="59" r="5.5" fill="#f7e6cf"/>
+        <path d="M56 53 L65 33 L76 52" fill="#8c5a38"/>
+        <path d="M72 44 L81 24 L92 43" fill="#8c5a38"/>
+        <path d="M89 41 L99 21 L110 41" fill="#8c5a38"/>
+        <path d="M107 44 L118 26 L128 48" fill="#8c5a38"/>
+        <path d="M122 57 L135 40 L142 61" fill="#8c5a38"/>
+        <path d="M49 101 Q76 86 95 87 Q114 89 130 106 Q122 134 90 137 Q59 140 49 101Z" fill="#fff1df"/>
+        <ellipse cx="79" cy="97" rx="4" ry="5" fill="#47362e"/>
+        <ellipse cx="104" cy="95" rx="4" ry="5" fill="#47362e"/>
+        <circle cx="92" cy="106" r="6" fill="#6a5040"/>
+        <path d="M77 118 Q89 128 101 118" stroke="#6b5243" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+        <path d="M39 50 Q91 20 143 49 L140 59 Q96 39 42 62 Z" fill="${visor}"/>
+        <path d="M36 53 H146" stroke="#fff3df" stroke-width="5" stroke-linecap="round" opacity=".78"/>
+        <path d="M59 133 Q54 151 63 160" stroke="#8b694e" stroke-width="7" stroke-linecap="round"/>
+        <path d="M111 131 Q116 150 107 160" stroke="#8b694e" stroke-width="7" stroke-linecap="round"/>
+        <path d="M47 114 Q35 119 29 130" stroke="#8b694e" stroke-width="7" stroke-linecap="round"/>
+        <path d="M126 114 Q139 117 145 128" stroke="#8b694e" stroke-width="7" stroke-linecap="round"/>
+      </svg>`;
+    }
+
+  </script>
+</body>
+</html>
